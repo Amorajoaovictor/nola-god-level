@@ -4,7 +4,7 @@ import { SaleRepository, ISaleRepository } from '@/lib/repositories/sale.reposit
 export interface ISaleService {
   getAllSales(page?: number, limit?: number): Promise<{ data: Sale[]; total: number; page: number; limit: number }>;
   getSaleById(id: number): Promise<Sale | null>;
-  getSalesByStore(storeId: number, page?: number, limit?: number): Promise<Sale[]>;
+  getSalesByStore(storeId: number, page?: number, limit?: number): Promise<{ data: Sale[]; total: number }>;
   getSalesByChannel(channelId: number, page?: number, limit?: number): Promise<Sale[]>;
   getSalesByDateRange(startDate: Date, endDate: Date, page?: number, limit?: number): Promise<Sale[]>;
   getStoreTotalSales(storeId: number): Promise<number>;
@@ -41,9 +41,13 @@ export class SaleService implements ISaleService {
     return this.repository.findById(id);
   }
 
-  async getSalesByStore(storeId: number, page = 1, limit = 50): Promise<Sale[]> {
+  async getSalesByStore(storeId: number, page = 1, limit = 50): Promise<{ data: Sale[]; total: number }> {
     const skip = (page - 1) * limit;
-    return this.repository.findByStoreId(storeId, skip, limit);
+    const [data, total] = await Promise.all([
+      this.repository.findByStoreId(storeId, skip, limit),
+      this.repository.count({ storeId }),
+    ]);
+    return { data, total };
   }
 
   async getSalesByChannel(channelId: number, page = 1, limit = 50): Promise<Sale[]> {

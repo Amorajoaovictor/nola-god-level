@@ -12,9 +12,8 @@ export const GET = asyncHandler(
     const { searchParams } = new URL(req.url);
     const { page, limit } = validatePagination(searchParams);
 
-    const sales = await saleService.getSalesByStore(storeId, page, limit);
-    const total = await saleService.getStoreTotalSales(storeId);
+    const { data, total } = await saleService.getSalesByStore(storeId, page, limit);
 
-    return paginatedResponse(sales, page, limit, total);
+    return paginatedResponse(data, page, limit, total);
   }
 );
