@@ -19,13 +19,14 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   if (storeIdStr || startDateStr || endDateStr) {
     const whereClause: any = {};
     
+    // Construir filtro para o relacionamento sale
+    whereClause.sale = {};
+    
     if (storeIdStr) {
-      whereClause.sale = whereClause.sale || {};
       whereClause.sale.storeId = parseInt(storeIdStr);
     }
     
     if (startDateStr || endDateStr) {
-      whereClause.sale = whereClause.sale || {};
       whereClause.sale.createdAt = {};
       if (startDateStr) {
         whereClause.sale.createdAt.gte = new Date(startDateStr);
