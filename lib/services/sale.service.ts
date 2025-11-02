@@ -123,11 +123,13 @@ export class SaleService implements ISaleService {
       if (endDate) filters.createdAt.lte = endDate;
     }
 
-    const averageTicket = await this.getAverageTicket(storeId);
-    const totalRevenue = await this.repository.getTotalRevenue(storeId, daysOfWeek);
+    const totalRevenue = await this.repository.getTotalRevenue(storeId, daysOfWeek, startDate, endDate);
     const salesCount = await this.repository.count(filters, daysOfWeek);
     const completedSales = await this.repository.countByStatus('COMPLETED', filters, daysOfWeek);
     const cancelledSales = await this.repository.countByStatus('CANCELLED', filters, daysOfWeek);
+    
+    // Calcula o ticket médio com base na receita e quantidade filtradas
+    const averageTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 
     return {
       totalRevenue,

@@ -8,7 +8,7 @@ export interface ISaleRepository extends IBaseRepository<Sale> {
   findByDateRange(startDate: Date, endDate: Date, skip?: number, take?: number): Promise<Sale[]>;
   findByDaysOfWeek(daysOfWeek: number[], skip?: number, take?: number, filters?: any): Promise<Sale[]>;
   getTotalSalesByStore(storeId: number): Promise<number>;
-  getTotalRevenue(storeId?: number, daysOfWeek?: number[]): Promise<number>;
+  getTotalRevenue(storeId?: number, daysOfWeek?: number[], startDate?: Date, endDate?: Date): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
   countByStatus(status: string, filters?: any, daysOfWeek?: number[]): Promise<number>;
 }
@@ -192,7 +192,7 @@ export class SaleRepository implements ISaleRepository {
     return Number(result._sum.totalAmount ?? 0);
   }
 
-  async getTotalRevenue(storeId?: number, daysOfWeek?: number[]): Promise<number> {
+  async getTotalRevenue(storeId?: number, daysOfWeek?: number[], startDate?: Date, endDate?: Date): Promise<number> {
     if (daysOfWeek && daysOfWeek.length > 0) {
       // Use raw SQL para filtrar por múltiplos dias da semana
       let query = `
@@ -205,12 +205,28 @@ export class SaleRepository implements ISaleRepository {
         query += ` AND "storeId" = ${storeId}`;
       }
       
+      if (startDate) {
+        query += ` AND "createdAt" >= '${startDate.toISOString()}'`;
+      }
+      
+      if (endDate) {
+        query += ` AND "createdAt" <= '${endDate.toISOString()}'`;
+      }
+      
       const result = await prisma.$queryRawUnsafe<[{ total: bigint | null }]>(query);
       return Number(result[0]?.total ?? 0);
     }
 
+    const whereClause: any = {};
+    if (storeId) whereClause.storeId = storeId;
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) whereClause.createdAt.gte = startDate;
+      if (endDate) whereClause.createdAt.lte = endDate;
+    }
+
     const result = await prisma.sale.aggregate({
-      where: storeId ? { storeId } : undefined,
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
       _sum: {
         totalAmount: true,
       },
