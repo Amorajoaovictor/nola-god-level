@@ -9,7 +9,7 @@ export interface ISaleService {
   getSalesByDateRange(startDate: Date, endDate: Date, page?: number, limit?: number): Promise<Sale[]>;
   getStoreTotalSales(storeId: number): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
-  getSalesSummary(storeId?: number, startDate?: Date, endDate?: Date, daysOfWeek?: number[]): Promise<any>;
+  getSalesSummary(storeId?: number, startDate?: Date, endDate?: Date, daysOfWeek?: number[], storeIds?: number[]): Promise<any>;
 }
 
 export class SaleService implements ISaleService {
@@ -30,7 +30,7 @@ export class SaleService implements ISaleService {
     if (filters?.daysOfWeek && filters.daysOfWeek.length > 0) {
       // Construir objeto de filtros para passar ao repository
       const filterParams: any = {};
-      if (filters.storeId) filterParams.storeId = filters.storeId;
+      if (filters.storeIds && filters.storeIds.length > 0) filterParams.storeIds = filters.storeIds;
       if (filters.channelId) filterParams.channelId = filters.channelId;
       if (filters.status) filterParams.status = filters.status;
       if (filters.startDate) filterParams.startDate = filters.startDate;
@@ -51,7 +51,9 @@ export class SaleService implements ISaleService {
     
     // Build where clause based on filters (quando NÃO há filtro de dias)
     const where: any = {};
-    if (filters?.storeId) where.storeId = filters.storeId;
+    if (filters?.storeIds && filters.storeIds.length > 0) {
+      where.storeId = { in: filters.storeIds };
+    }
     if (filters?.channelId) where.channelId = filters.channelId;
     if (filters?.status) where.saleStatusDesc = filters.status;
     if (filters?.startDate || filters?.endDate) {
@@ -113,10 +115,15 @@ export class SaleService implements ISaleService {
     storeId?: number,
     startDate?: Date,
     endDate?: Date,
-    daysOfWeek?: number[]
+    daysOfWeek?: number[],
+    storeIds?: number[]
   ): Promise<any> {
     const filters: any = {};
-    if (storeId) filters.storeId = storeId;
+    if (storeIds && storeIds.length > 0) {
+      filters.storeIds = storeIds;
+    } else if (storeId) {
+      filters.storeIds = [storeId];
+    }
     if (startDate || endDate) {
       filters.createdAt = {};
       if (startDate) filters.createdAt.gte = startDate;

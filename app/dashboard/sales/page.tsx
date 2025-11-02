@@ -115,6 +115,7 @@ export default function SalesPage() {
 
   // Filtros
   const [storeId, setStoreId] = useState<string>("");
+  const [storeIds, setStoreIds] = useState<number[]>([]); // Múltiplas lojas
   const [channelId, setChannelId] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -130,7 +131,7 @@ export default function SalesPage() {
     store.id.toString().includes(storeSearchQuery)
   );
   
-  const selectedStore = stores.find(s => s.id.toString() === storeId);
+  const selectedStores = stores.filter(s => storeIds.includes(s.id));
 
   // Carregar lojas e canais
   useEffect(() => {
@@ -162,7 +163,8 @@ export default function SalesPage() {
           limit: limit.toString(),
         });
 
-        if (storeId) params.append("storeId", storeId);
+        // Adicionar múltiplas lojas como parâmetros separados
+        storeIds.forEach(id => params.append("storeId", id.toString()));
         if (channelId) params.append("channelId", channelId);
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
@@ -172,7 +174,7 @@ export default function SalesPage() {
 
         // Params para heatmap (COM os dias selecionados para filtrar o heatmap)
         const heatmapParams = new URLSearchParams();
-        if (storeId) heatmapParams.append("storeId", storeId);
+        storeIds.forEach(id => heatmapParams.append("storeId", id.toString()));
         if (channelId) heatmapParams.append("channelId", channelId);
         if (startDate) heatmapParams.append("startDate", startDate);
         if (endDate) heatmapParams.append("endDate", endDate);
@@ -213,12 +215,12 @@ export default function SalesPage() {
     };
 
     fetchSales();
-  }, [page, storeId, channelId, startDate, endDate, status, selectedDays]);
+  }, [page, storeIds, channelId, startDate, endDate, status, selectedDays]);
 
   const exportSalesToCSV = async () => {
     try {
       const params = new URLSearchParams();
-      if (storeId) params.append("storeId", storeId);
+      storeIds.forEach(id => params.append("storeId", id.toString()));
       if (channelId) params.append("channelId", channelId);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
@@ -291,14 +293,19 @@ export default function SalesPage() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              {/* Store Searchbox */}
+              {/* Store Searchbox with Multiple Selection */}
               <div className="relative">
                 <button
                   onClick={() => setStoreSearchOpen(!storeSearchOpen)}
                   className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-slate-50 flex items-center gap-2 min-w-[200px] justify-between"
                 >
                   <span className="truncate">
-                    {selectedStore ? selectedStore.name : "Todas as lojas"}
+                    {storeIds.length === 0 
+                      ? "Todas as lojas" 
+                      : storeIds.length === 1 
+                      ? selectedStores[0]?.name
+                      : `${storeIds.length} lojas selecionadas`
+                    }
                   </span>
                   <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -322,35 +329,56 @@ export default function SalesPage() {
                           autoFocus
                         />
                       </div>
+                      
+                      {/* Selected stores count */}
+                      {storeIds.length > 0 && (
+                        <div className="px-4 py-2 bg-blue-50 border-b border-slate-200 flex items-center justify-between">
+                          <span className="text-xs font-medium text-blue-700">
+                            {storeIds.length} {storeIds.length === 1 ? 'loja selecionada' : 'lojas selecionadas'}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStoreIds([]);
+                              setPage(1);
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      )}
+                      
                       <div className="max-h-[300px] overflow-y-auto">
-                        <button
-                          onClick={() => {
-                            setStoreId("");
-                            setPage(1);
-                            setStoreSearchOpen(false);
-                            setStoreSearchQuery("");
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <span className="font-medium">Todas as lojas</span>
-                        </button>
                         {filteredStores.length > 0 ? (
                           filteredStores.map((store) => (
-                            <button
+                            <label
                               key={store.id}
-                              onClick={() => {
-                                setStoreId(store.id.toString());
-                                setPage(1);
-                                setStoreSearchOpen(false);
-                                setStoreSearchQuery("");
-                              }}
-                              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 ${
-                                storeId === store.id.toString() ? 'bg-blue-50 text-blue-700' : ''
+                              className={`w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-slate-50 cursor-pointer ${
+                                storeIds.includes(store.id) ? 'bg-blue-50' : ''
                               }`}
                             >
-                              <span>{store.name}</span>
-                              <span className="text-xs text-slate-500">#{store.id}</span>
-                            </button>
+                              <input
+                                type="checkbox"
+                                checked={storeIds.includes(store.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setStoreIds([...storeIds, store.id]);
+                                  } else {
+                                    setStoreIds(storeIds.filter(id => id !== store.id));
+                                  }
+                                  setPage(1);
+                                }}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="flex-1 flex items-center justify-between">
+                                <span className={storeIds.includes(store.id) ? 'font-medium text-blue-700' : ''}>
+                                  {store.name}
+                                </span>
+                                <span className="text-xs text-slate-500">#{store.id}</span>
+                              </div>
+                            </label>
                           ))
                         ) : (
                           <div className="px-4 py-2 text-sm text-slate-500 text-center">
@@ -468,10 +496,10 @@ export default function SalesPage() {
                 </label>
               ))}
             </div>
-            {(storeId || channelId || startDate || endDate || status || selectedDays.length > 0) && (
+            {(storeIds.length > 0 || channelId || startDate || endDate || status || selectedDays.length > 0) && (
               <button
                 onClick={() => {
-                  setStoreId("");
+                  setStoreIds([]);
                   setChannelId("");
                   setStartDate("");
                   setEndDate("");

@@ -133,9 +133,9 @@ export class SaleRepository implements ISaleRepository {
     const params: any[] = [];
     let paramIndex = 1;
 
-    if (filters?.storeId) {
-      query += ` AND s.store_id = $${paramIndex}`;
-      params.push(filters.storeId);
+    if (filters?.storeIds && filters.storeIds.length > 0) {
+      query += ` AND s.store_id = ANY($${paramIndex})`;
+      params.push(filters.storeIds);
       paramIndex++;
     }
 
@@ -280,7 +280,9 @@ export class SaleRepository implements ISaleRepository {
       let query = `SELECT COUNT(*)::int as count FROM sales WHERE EXTRACT(DOW FROM created_at)::int = ANY(ARRAY[${daysOfWeek.join(',')}])`;
       
       if (params) {
-        if (params.storeId) query += ' AND store_id = ' + params.storeId;
+        if (params.storeIds && params.storeIds.length > 0) {
+          query += ` AND store_id = ANY(ARRAY[${params.storeIds.join(',')}])`;
+        }
         if (params.channelId) query += ' AND channel_id = ' + params.channelId;
         if (params.saleStatusDesc) query += ` AND sale_status_desc = '${params.saleStatusDesc}'`;
         if (params.createdAt?.gte) query += ` AND created_at >= '${params.createdAt.gte.toISOString()}'`;
@@ -302,7 +304,9 @@ export class SaleRepository implements ISaleRepository {
       let query = `SELECT COUNT(*)::int as count FROM sales WHERE sale_status_desc = '${status}' AND EXTRACT(DOW FROM created_at)::int = ANY(ARRAY[${daysOfWeek.join(',')}])`;
       
       if (filters) {
-        if (filters.storeId) query += ' AND store_id = ' + filters.storeId;
+        if (filters.storeIds && filters.storeIds.length > 0) {
+          query += ` AND store_id = ANY(ARRAY[${filters.storeIds.join(',')}])`;
+        }
         if (filters.channelId) query += ' AND channel_id = ' + filters.channelId;
         if (filters.createdAt?.gte) query += ` AND created_at >= '${filters.createdAt.gte.toISOString()}'`;
         if (filters.createdAt?.lte) query += ` AND created_at <= '${filters.createdAt.lte.toISOString()}'`;

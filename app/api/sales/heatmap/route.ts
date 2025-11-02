@@ -9,7 +9,7 @@ import prisma from '@/lib/prisma/client';
  */
 export const GET = asyncHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  const storeIdStr = searchParams.get('storeId');
+  const storeIds = searchParams.getAll('storeId').map(id => parseInt(id));
   const channelIdStr = searchParams.get('channelId');
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
@@ -44,9 +44,9 @@ export const GET = asyncHandler(async (req: NextRequest) => {
       paramIndex++;
     }
 
-    if (storeIdStr) {
-      conditions.push(`store_id = $${paramIndex}`);
-      params.push(parseInt(storeIdStr));
+    if (storeIds.length > 0) {
+      conditions.push(`store_id = ANY($${paramIndex})`);
+      params.push(storeIds);
       paramIndex++;
     }
 

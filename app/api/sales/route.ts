@@ -15,7 +15,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const { page, limit } = validatePagination(searchParams);
   
   // Extract filter parameters
-  const storeIdStr = searchParams.get('storeId');
+  const storeIds = searchParams.getAll('storeId').map(id => parseInt(id));
   const channelIdStr = searchParams.get('channelId');
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
@@ -23,7 +23,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const daysOfWeek = searchParams.getAll('daysOfWeek');
 
   const filters = {
-    storeId: storeIdStr ? parseInt(storeIdStr) : undefined,
+    storeIds: storeIds.length > 0 ? storeIds : undefined,
     channelId: channelIdStr ? parseInt(channelIdStr) : undefined,
     startDate: startDateStr ? new Date(startDateStr) : undefined,
     endDate: endDateStr ? new Date(endDateStr) : undefined,
