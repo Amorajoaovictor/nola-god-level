@@ -1,24 +1,80 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+const CACHE_KEY = "dashboard_summary";
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos em ms
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  // Função para buscar summary com cache
+  const fetchSummary = useCallback(async (forceRefresh = false) => {
+    // Verifica cache
+    if (!forceRefresh) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const age = Date.now() - timestamp;
+        
+        if (age < CACHE_DURATION) {
+          setSummary(data);
+          setLastUpdate(new Date(timestamp));
+          return data;
+        }
+      }
+    }
+
+    // Busca dados novos
+    setRefreshing(true);
+    try {
+      const summaryRes = await fetch("/api/sales/summary");
+      const summaryData = await summaryRes.json();
+      const newSummary = summaryData.data;
+
+      // Salva no cache
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          data: newSummary,
+          timestamp: Date.now(),
+        })
+      );
+
+      setSummary(newSummary);
+      setLastUpdate(new Date());
+      
+      return newSummary;
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Atualização automática a cada 10 minutos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchSummary(true);
+    }, CACHE_DURATION);
+
+    return () => clearInterval(interval);
+  }, [fetchSummary]);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const [summaryRes, productsRes] = await Promise.all([
-          fetch("/api/sales/summary"),
+        const [, productsRes] = await Promise.all([
+          fetchSummary(), // Usa cache se disponível
           fetch("/api/products/top-selling?limit=5"),
         ]);
 
-        const summaryData = await summaryRes.json();
         const productsData = await productsRes.json();
-
-        setSummary(summaryData.data);
         setTopProducts(productsData.data);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -28,7 +84,11 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, []);
+  }, [fetchSummary]);
+
+  const handleRefresh = () => {
+    fetchSummary(true);
+  };
 
   if (loading) {
     return (
@@ -56,9 +116,36 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-              <p className="text-sm text-slate-600">Overview das métricas principais</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-slate-600">Overview das métricas principais</p>
+                {lastUpdate && (
+                  <span className="text-xs text-slate-400">
+                    • Atualizado {lastUpdate.toLocaleTimeString("pt-BR")}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <svg
+                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                {refreshing ? "Atualizando..." : "Atualizar"}
+              </button>
               <button className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
                 Filtrar Período
               </button>
