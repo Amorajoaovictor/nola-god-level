@@ -1,9 +1,24 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 const CACHE_KEY = "dashboard_summary";
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos em ms
+
+const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
@@ -204,6 +219,88 @@ export default function DashboardPage() {
               {topProducts.length > 0 ? "500+" : "-"}
             </p>
             <p className="text-xs text-slate-500 mt-2">No catálogo</p>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Top Products Bar Chart */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Top 5 Produtos - Quantidade Vendida
+            </h3>
+            {topProducts.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topProducts}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="product.name"
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                    fontSize={12}
+                  />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: any) => value.toLocaleString("pt-BR")}
+                    labelStyle={{ color: "#1e293b" }}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="totalQuantity"
+                    fill="#3b82f6"
+                    name="Quantidade"
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">
+                Sem dados disponíveis
+              </div>
+            )}
+          </div>
+
+          {/* Revenue Pie Chart */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Distribuição de Receita - Top 5
+            </h3>
+            {topProducts.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={topProducts}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name?.slice(0, 15)}... ${(percent * 100).toFixed(0)}%`
+                    }
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="totalRevenue"
+                    nameKey="product.name"
+                  >
+                    {topProducts.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any) =>
+                      new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      }).format(value)
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">
+                Sem dados disponíveis
+              </div>
+            )}
           </div>
         </div>
 
