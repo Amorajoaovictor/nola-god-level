@@ -26,7 +26,30 @@ export class SaleService implements ISaleService {
   ): Promise<{ data: Sale[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit;
     
-    // Build where clause based on filters
+    // Se há filtro de dias da semana, usar query raw SQL
+    if (filters?.daysOfWeek && filters.daysOfWeek.length > 0) {
+      // Construir objeto de filtros para passar ao repository
+      const filterParams: any = {};
+      if (filters.storeId) filterParams.storeId = filters.storeId;
+      if (filters.channelId) filterParams.channelId = filters.channelId;
+      if (filters.status) filterParams.status = filters.status;
+      if (filters.startDate) filterParams.startDate = filters.startDate;
+      if (filters.endDate) filterParams.endDate = filters.endDate;
+      
+      const [data, total] = await Promise.all([
+        this.repository.findByDaysOfWeek(filters.daysOfWeek, skip, limit, filterParams),
+        this.repository.count(filterParams, filters.daysOfWeek),
+      ]);
+      
+      return {
+        data,
+        total,
+        page,
+        limit,
+      };
+    }
+    
+    // Build where clause based on filters (quando NÃO há filtro de dias)
     const where: any = {};
     if (filters?.storeId) where.storeId = filters.storeId;
     if (filters?.channelId) where.channelId = filters.channelId;
@@ -39,7 +62,7 @@ export class SaleService implements ISaleService {
     
     const [data, total] = await Promise.all([
       this.repository.findAll({ skip, take: limit, where }),
-      this.repository.count(where, filters?.daysOfWeek),
+      this.repository.count(where),
     ]);
 
     return {
