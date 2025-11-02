@@ -99,6 +99,39 @@ export default function ProductsPage() {
     fetchGlobalStats(true);
   };
 
+  const exportProductsToCSV = async () => {
+    try {
+      const res = await fetch(`/api/products/top-selling?limit=10000`);
+      const data = await res.json();
+      
+      const csvData = [
+        ["ID", "Nome", "Categoria", "Quantidade Vendida", "Receita Total", "Preço Médio"],
+        ...(data.data || []).map((product: any) => [
+          product.id,
+          product.name,
+          product.category || "-",
+          product.totalQuantity || 0,
+          (product.totalRevenue || 0).toFixed(2),
+          product.totalQuantity > 0 ? ((product.totalRevenue || 0) / product.totalQuantity).toFixed(2) : "0.00"
+        ])
+      ];
+
+      const csv = csvData.map(row => row.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `produtos_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting products:", error);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -159,7 +192,13 @@ export default function ProductsPage() {
                 <option value={50}>Top 50</option>
                 <option value={100}>Top 100</option>
               </select>
-              <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              <button 
+                onClick={exportProductsToCSV}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 Exportar
               </button>
             </div>

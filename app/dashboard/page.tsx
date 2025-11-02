@@ -26,6 +26,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [showPeriodFilter, setShowPeriodFilter] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Função para buscar summary com cache
   const fetchSummary = useCallback(async (forceRefresh = false) => {
@@ -105,6 +108,46 @@ export default function DashboardPage() {
     fetchSummary(true);
   };
 
+  const handleApplyPeriodFilter = () => {
+    setShowPeriodFilter(false);
+    fetchSummary(true);
+  };
+
+  const handleClearPeriodFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setShowPeriodFilter(false);
+    fetchSummary(true);
+  };
+
+  const exportToCSV = () => {
+    const data = [
+      ["Métrica", "Valor"],
+      ["Total de Vendas", summary.totalSales.toString()],
+      ["Receita Total", formatCurrency(summary.totalRevenue)],
+      ["Ticket Médio", formatCurrency(summary.averageTicket)],
+      ["Vendas Finalizadas", summary.completedSales.toString()],
+      ["Vendas Canceladas", summary.cancelledSales.toString()],
+      ["Vendas Pendentes", summary.pendingSales.toString()],
+      [""],
+      ["Top 10 Produtos"],
+      ["Produto", "Quantidade Vendida", "Receita Total"],
+      ...topProducts.map(p => [p.name, p.quantity.toString(), formatCurrency(p.revenue)])
+    ];
+
+    const csv = data.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `dashboard_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -161,10 +204,71 @@ export default function DashboardPage() {
                 </svg>
                 {refreshing ? "Atualizando..." : "Atualizar"}
               </button>
-              <button className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
-                Filtrar Período
-              </button>
-              <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              <div className="relative">
+                <button 
+                  onClick={() => setShowPeriodFilter(!showPeriodFilter)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Filtrar Período
+                  {(startDate || endDate) && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">●</span>
+                  )}
+                </button>
+                
+                {showPeriodFilter && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-slate-200 z-10 p-4">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-3">Filtrar por Período</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">
+                          Data Inicial
+                        </label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">
+                          Data Final
+                        </label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={handleClearPeriodFilter}
+                          className="flex-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+                        >
+                          Limpar
+                        </button>
+                        <button
+                          onClick={handleApplyPeriodFilter}
+                          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={exportToCSV}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 Exportar Relatório
               </button>
             </div>
@@ -273,10 +377,6 @@ export default function DashboardPage() {
                     data={topProducts}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name?.slice(0, 15)}... ${(percent * 100).toFixed(0)}%`
-                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="totalRevenue"
