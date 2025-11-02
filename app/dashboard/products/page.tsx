@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function ProductsPage() {
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(20);
 
@@ -11,9 +12,15 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/products/top-selling?limit=${limit}`);
-        const data = await res.json();
-        setTopProducts(data.data || []);
+        const [productsRes, countRes] = await Promise.all([
+          fetch(`/api/products/top-selling?limit=${limit}`),
+          fetch(`/api/products/count`),
+        ]);
+        const productsData = await productsRes.json();
+        const countData = await countRes.json();
+        
+        setTopProducts(productsData.data || []);
+        setTotalProducts(countData.data?.total || 0);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -74,10 +81,10 @@ export default function ProductsPage() {
               Total de Produtos
             </p>
             <p className="text-2xl font-bold text-slate-900">
-              {topProducts.length}
+              {totalProducts.toLocaleString("pt-BR")}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Exibindo top {limit} produtos
+              Exibindo top {topProducts.length} produtos
             </p>
           </div>
 
