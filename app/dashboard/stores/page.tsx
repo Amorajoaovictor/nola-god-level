@@ -12,6 +12,8 @@ export default function StoresPage() {
   const [showStoreDetails, setShowStoreDetails] = useState<number | null>(null);
   const [storePerformance, setStorePerformance] = useState<any>(null);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonData, setComparisonData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -42,8 +44,43 @@ export default function StoresPage() {
   const states = Array.from(new Set(stores.map((s) => s.state))).sort();
 
   const handleCompareToggle = () => {
+    if (compareMode && selectedStores.length > 0) {
+      // Se estava em modo comparação e tinha lojas selecionadas, mostra o modal
+      compareStores();
+    }
     setCompareMode(!compareMode);
     setSelectedStores([]);
+  };
+
+  const compareStores = async () => {
+    if (selectedStores.length < 2) {
+      alert("Selecione pelo menos 2 lojas para comparar");
+      return;
+    }
+
+    setLoadingPerformance(true);
+    try {
+      const promises = selectedStores.map(async (storeId) => {
+        const res = await fetch(`/api/sales/summary?storeId=${storeId}`);
+        const data = await res.json();
+        const store = stores.find((s) => s.id === storeId);
+        return {
+          store,
+          performance: data.data,
+        };
+      });
+
+      const results = await Promise.all(promises);
+      setComparisonData(results);
+      setShowComparison(true);
+      setCompareMode(false);
+      setSelectedStores([]);
+    } catch (error) {
+      console.error("Error comparing stores:", error);
+      alert("Erro ao comparar lojas");
+    } finally {
+      setLoadingPerformance(false);
+    }
   };
 
   const handleStoreSelection = (storeId: number) => {
@@ -145,16 +182,27 @@ export default function StoresPage() {
                 )}
               </div>
 
-              <button
-                onClick={handleCompareToggle}
-                className={`px-4 py-2 text-sm font-medium rounded-lg ${
-                  compareMode
-                    ? "text-white bg-blue-600 hover:bg-blue-700"
-                    : "text-slate-700 bg-white border border-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                {compareMode ? `Comparando (${selectedStores.length}/3)` : "Comparar Lojas"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCompareToggle}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                    compareMode
+                      ? "text-white bg-blue-600 hover:bg-blue-700"
+                      : "text-slate-700 bg-white border border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  {compareMode ? `Selecionadas: ${selectedStores.length}/3` : "Comparar Lojas"}
+                </button>
+
+                {compareMode && selectedStores.length >= 2 && (
+                  <button
+                    onClick={compareStores}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  >
+                    Visualizar Comparação
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -484,6 +532,169 @@ export default function StoresPage() {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Comparação */}
+        {showComparison && comparisonData.length > 0 && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-slate-900">
+                    Comparação de Lojas
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowComparison(false);
+                      setComparisonData([]);
+                    }}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Headers das Lojas */}
+                <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
+                  {comparisonData.map(({ store }) => (
+                    <div key={store.id} className="bg-slate-50 p-4 rounded-lg text-center">
+                      <h3 className="font-semibold text-slate-900 mb-1">{store.name}</h3>
+                      <p className="text-sm text-slate-600">{store.city} - {store.state}</p>
+                      <span
+                        className={`inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${
+                          store.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {store.isActive ? "Ativa" : "Inativa"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Métricas - Receita Total */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-slate-600 mb-3">💰 Receita Total</h4>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
+                    {comparisonData.map(({ store, performance }) => (
+                      <div key={store.id} className="bg-green-50 p-4 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-green-700">
+                          {formatCurrency(performance.totalRevenue || 0)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Métricas - Total de Vendas */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-slate-600 mb-3">🛒 Total de Vendas</h4>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
+                    {comparisonData.map(({ store, performance }) => (
+                      <div key={store.id} className="bg-blue-50 p-4 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-blue-700">
+                          {(performance.totalSales || 0).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Métricas - Ticket Médio */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-slate-600 mb-3">💵 Ticket Médio</h4>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
+                    {comparisonData.map(({ store, performance }) => (
+                      <div key={store.id} className="bg-purple-50 p-4 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-purple-700">
+                          {formatCurrency(performance.averageTicket || 0)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Métricas - Taxa de Conclusão */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-slate-600 mb-3">✅ Taxa de Conclusão</h4>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
+                    {comparisonData.map(({ store, performance }) => (
+                      <div key={store.id} className="bg-indigo-50 p-4 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-indigo-700">
+                          {performance.totalSales > 0
+                            ? ((performance.completedSales / performance.totalSales) * 100).toFixed(1)
+                            : 0}%
+                        </p>
+                        <p className="text-xs text-indigo-600 mt-1">
+                          {(performance.completedSales || 0).toLocaleString("pt-BR")} de{" "}
+                          {(performance.totalSales || 0).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Métricas - Vendas Canceladas */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-slate-600 mb-3">❌ Vendas Canceladas</h4>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
+                    {comparisonData.map(({ store, performance }) => (
+                      <div key={store.id} className="bg-red-50 p-4 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-red-700">
+                          {(performance.cancelledSales || 0).toLocaleString("pt-BR")}
+                        </p>
+                        <p className="text-xs text-red-600 mt-1">
+                          {performance.totalSales > 0
+                            ? ((performance.cancelledSales / performance.totalSales) * 100).toFixed(1)
+                            : 0}% do total
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ranking */}
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-600 mb-4">🏆 Ranking por Receita</h4>
+                  <div className="space-y-2">
+                    {comparisonData
+                      .sort((a, b) => (b.performance.totalRevenue || 0) - (a.performance.totalRevenue || 0))
+                      .map(({ store, performance }, index) => (
+                        <div
+                          key={store.id}
+                          className={`flex items-center justify-between p-4 rounded-lg ${
+                            index === 0
+                              ? "bg-yellow-50 border-2 border-yellow-300"
+                              : "bg-slate-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl ${index === 0 ? "text-yellow-500" : "text-slate-400"}`}>
+                              {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
+                            </span>
+                            <div>
+                              <p className="font-semibold text-slate-900">{store.name}</p>
+                              <p className="text-sm text-slate-600">{store.city} - {store.state}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-green-700">
+                              {formatCurrency(performance.totalRevenue || 0)}
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {(performance.totalSales || 0).toLocaleString("pt-BR")} vendas
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

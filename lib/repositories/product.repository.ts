@@ -6,7 +6,7 @@ export interface IProductRepository extends IBaseRepository<Product> {
   findByBrandId(brandId: number): Promise<Product[]>;
   findByCategoryId(categoryId: number): Promise<Product[]>;
   searchByName(name: string): Promise<Product[]>;
-  findTopSelling(limit?: number): Promise<any[]>;
+  findTopSelling(limit?: number, startDate?: string, endDate?: string, storeId?: number): Promise<any[]>;
 }
 
 export class ProductRepository implements IProductRepository {
@@ -73,22 +73,27 @@ export class ProductRepository implements IProductRepository {
     });
   }
 
-  async findTopSelling(limit = 10, startDate?: string, endDate?: string): Promise<any[]> {
-    // Construir where clause para filtro de data
+  async findTopSelling(limit = 10, startDate?: string, endDate?: string, storeId?: number): Promise<any[]> {
+    // Construir where clause para filtros
     const whereClause: any = {};
     
-    if (startDate || endDate) {
+    if (startDate || endDate || storeId) {
       whereClause.sale = {};
-      if (startDate) {
-        whereClause.sale.createdAt = { gte: new Date(startDate) };
+      
+      if (storeId) {
+        whereClause.sale.storeId = storeId;
       }
-      if (endDate) {
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        whereClause.sale.createdAt = {
-          ...whereClause.sale.createdAt,
-          lte: endDateTime,
-        };
+      
+      if (startDate || endDate) {
+        whereClause.sale.createdAt = {};
+        if (startDate) {
+          whereClause.sale.createdAt.gte = new Date(startDate);
+        }
+        if (endDate) {
+          const endDateTime = new Date(endDate);
+          endDateTime.setHours(23, 59, 59, 999);
+          whereClause.sale.createdAt.lte = endDateTime;
+        }
       }
     }
 

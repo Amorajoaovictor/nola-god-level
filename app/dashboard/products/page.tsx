@@ -13,6 +13,27 @@ export default function ProductsPage() {
   const [refreshingStats, setRefreshingStats] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [limit, setLimit] = useState(20);
+  
+  // Estados de filtro
+  const [stores, setStores] = useState<any[]>([]);
+  const [storeId, setStoreId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Buscar lista de lojas
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const res = await fetch("/api/stores");
+        const data = await res.json();
+        setStores(data.data || []);
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+      }
+    };
+    fetchStores();
+  }, []);
 
   // Função para buscar stats globais com cache
   const fetchGlobalStats = useCallback(async (forceRefresh = false) => {
@@ -78,8 +99,14 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
+        // Monta parâmetros com filtros
+        const params = new URLSearchParams({ limit: limit.toString() });
+        if (storeId) params.append("storeId", storeId);
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        
         const [productsRes] = await Promise.all([
-          fetch(`/api/products/top-selling?limit=${limit}`),
+          fetch(`/api/products/top-selling?${params.toString()}`),
           fetchGlobalStats(), // Usa cache se disponível
         ]);
         const productsData = await productsRes.json();
@@ -93,7 +120,7 @@ export default function ProductsPage() {
     };
 
     fetchProducts();
-  }, [limit, fetchGlobalStats]);
+  }, [limit, fetchGlobalStats, storeId, startDate, endDate]);
 
   const handleRefreshStats = () => {
     fetchGlobalStats(true);
@@ -165,6 +192,19 @@ export default function ProductsPage() {
             </div>
             <div className="flex items-center gap-4">
               <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                Filtros
+                {(storeId || startDate || endDate) && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">●</span>
+                )}
+              </button>
+              
+              <button
                 onClick={handleRefreshStats}
                 disabled={refreshingStats}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -182,8 +222,9 @@ export default function ProductsPage() {
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                {refreshingStats ? "Atualizando..." : "Atualizar Dados"}
+                {refreshingStats ? "Atualizando..." : "Atualizar"}
               </button>
+              
               <select
                 value={limit}
                 onChange={(e) => setLimit(Number(e.target.value))}
@@ -194,6 +235,7 @@ export default function ProductsPage() {
                 <option value={50}>Top 50</option>
                 <option value={100}>Top 100</option>
               </select>
+              
               <button 
                 onClick={exportProductsToCSV}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
@@ -210,6 +252,69 @@ export default function ProductsPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Painel de Filtros */}
+        {showFilters && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Filtros</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Loja
+                </label>
+                <select
+                  value={storeId}
+                  onChange={(e) => setStoreId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas as lojas</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Data Inicial
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Data Final
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setStoreId("");
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+              >
+                Limpar Filtros
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="space-y-6 mb-8">
           {/* Linha 1 - Métricas Globais */}

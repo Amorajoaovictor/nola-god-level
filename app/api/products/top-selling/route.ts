@@ -9,13 +9,16 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const limitStr = searchParams.get('limit');
   const limit = limitStr ? parseInt(limitStr) : 10;
+  const storeIdStr = searchParams.get('storeId');
+  const storeId = storeIdStr ? parseInt(storeIdStr) : undefined;
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
 
   const topProducts = await productService.getTopSellingProducts(
     limit,
     startDate || undefined,
-    endDate || undefined
+    endDate || undefined,
+    storeId
   );
 
   return successResponse(topProducts);
