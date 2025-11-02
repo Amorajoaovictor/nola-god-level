@@ -1,30 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+const CACHE_KEY = "products_global_stats";
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos em ms
 
 export default function ProductsPage() {
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [globalStats, setGlobalStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [refreshingStats, setRefreshingStats] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [limit, setLimit] = useState(20);
+
+  // Função para buscar stats globais com cache
+  const fetchGlobalStats = useCallback(async (forceRefresh = false) => {
+    // Verifica cache
+    if (!forceRefresh) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const age = Date.now() - timestamp;
+        
+        if (age < CACHE_DURATION) {
+          setGlobalStats(data);
+          setLastUpdate(new Date(timestamp));
+          return data;
+        }
+      }
+    }
+
+    // Busca dados novos
+    setRefreshingStats(true);
+    try {
+      const [countRes, statsRes] = await Promise.all([
+        fetch(`/api/products/count`),
+        fetch(`/api/products/stats`),
+      ]);
+      const countData = await countRes.json();
+      const statsData = await statsRes.json();
+
+      const newStats = statsData.data || {};
+      const total = countData.data?.total || 0;
+
+      // Salva no cache
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          data: newStats,
+          timestamp: Date.now(),
+        })
+      );
+
+      setGlobalStats(newStats);
+      setTotalProducts(total);
+      setLastUpdate(new Date());
+      
+      return newStats;
+    } catch (error) {
+      console.error("Error fetching global stats:", error);
+    } finally {
+      setRefreshingStats(false);
+    }
+  }, []);
+
+  // Atualização automática a cada 10 minutos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchGlobalStats(true);
+    }, CACHE_DURATION);
+
+    return () => clearInterval(interval);
+  }, [fetchGlobalStats]);
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const [productsRes, countRes, statsRes] = await Promise.all([
+        const [productsRes] = await Promise.all([
           fetch(`/api/products/top-selling?limit=${limit}`),
-          fetch(`/api/products/count`),
-          fetch(`/api/products/stats`),
+          fetchGlobalStats(), // Usa cache se disponível
         ]);
         const productsData = await productsRes.json();
-        const countData = await countRes.json();
-        const statsData = await statsRes.json();
         
         setTopProducts(productsData.data || []);
-        setTotalProducts(countData.data?.total || 0);
-        setGlobalStats(statsData.data || {});
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -33,7 +93,11 @@ export default function ProductsPage() {
     };
 
     fetchProducts();
-  }, [limit]);
+  }, [limit, fetchGlobalStats]);
+
+  const handleRefreshStats = () => {
+    fetchGlobalStats(true);
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -53,11 +117,38 @@ export default function ProductsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Produtos</h1>
-              <p className="text-sm text-slate-600">
-                Análise de performance dos produtos
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-slate-600">
+                  Análise de performance dos produtos
+                </p>
+                {lastUpdate && (
+                  <span className="text-xs text-slate-400">
+                    • Atualizado {lastUpdate.toLocaleTimeString("pt-BR")}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={handleRefreshStats}
+                disabled={refreshingStats}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <svg
+                  className={`w-4 h-4 ${refreshingStats ? "animate-spin" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                {refreshingStats ? "Atualizando..." : "Atualizar Dados"}
+              </button>
               <select
                 value={limit}
                 onChange={(e) => setLimit(Number(e.target.value))}
