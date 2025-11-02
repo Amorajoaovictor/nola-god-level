@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function SalesPage() {
   const [sales, setSales] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [channels, setChannels] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>({});
+  const [salesByDay, setSalesByDay] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -23,15 +36,18 @@ export default function SalesPage() {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        const [storesRes, channelsRes] = await Promise.all([
+        const [storesRes, channelsRes, byDayRes] = await Promise.all([
           fetch("/api/stores"),
           fetch("/api/channels"),
+          fetch("/api/sales/by-day?days=30"),
         ]);
         const storesData = await storesRes.json();
         const channelsData = await channelsRes.json();
+        const byDayData = await byDayRes.json();
         
         setStores(storesData.data || []);
         setChannels(channelsData.data || []);
+        setSalesByDay(byDayData.data || []);
       } catch (error) {
         console.error("Error fetching filters:", error);
       }
@@ -224,6 +240,107 @@ export default function SalesPage() {
             <p className="text-2xl font-bold text-red-600">
               {(summary.cancelledSales || 0).toLocaleString("pt-BR")}
             </p>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Sales Trend Line Chart */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Evolução de Vendas - Últimos 30 Dias
+            </h3>
+            {salesByDay.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesByDay}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
+                    }}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString("pt-BR");
+                    }}
+                    formatter={(value: any) => value.toLocaleString("pt-BR")}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="totalSales"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    name="Vendas"
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">
+                Sem dados disponíveis
+              </div>
+            )}
+          </div>
+
+          {/* Revenue Area Chart */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Faturamento Diário - Últimos 30 Dias
+            </h3>
+            {salesByDay.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={salesByDay}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
+                    }}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString("pt-BR");
+                    }}
+                    formatter={(value: any) =>
+                      new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      }).format(value)
+                    }
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="totalRevenue"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
+                    name="Receita"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">
+                Sem dados disponíveis
+              </div>
+            )}
           </div>
         </div>
 
