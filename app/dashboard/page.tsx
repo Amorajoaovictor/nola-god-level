@@ -123,20 +123,25 @@ export default function DashboardPage() {
   const exportToCSV = () => {
     const data = [
       ["Métrica", "Valor"],
-      ["Total de Vendas", summary.totalSales.toString()],
-      ["Receita Total", formatCurrency(summary.totalRevenue)],
-      ["Ticket Médio", formatCurrency(summary.averageTicket)],
-      ["Vendas Finalizadas", summary.completedSales.toString()],
-      ["Vendas Canceladas", summary.cancelledSales.toString()],
-      ["Vendas Pendentes", summary.pendingSales.toString()],
+      ["Total de Vendas", summary?.totalSales?.toString() || "0"],
+      ["Receita Total", summary?.totalRevenue ? `R$ ${summary.totalRevenue.toFixed(2)}` : "R$ 0,00"],
+      ["Ticket Médio", summary?.averageTicket ? `R$ ${summary.averageTicket.toFixed(2)}` : "R$ 0,00"],
+      ["Vendas Finalizadas", summary?.completedSales?.toString() || "0"],
+      ["Vendas Canceladas", summary?.cancelledSales?.toString() || "0"],
+      ["Vendas Pendentes", summary?.pendingSales?.toString() || "0"],
       [""],
-      ["Top 10 Produtos"],
-      ["Produto", "Quantidade Vendida", "Receita Total"],
-      ...topProducts.map(p => [p.name, p.quantity.toString(), formatCurrency(p.revenue)])
+      ["Top 5 Produtos"],
+      ["Produto", "Categoria", "Quantidade Vendida", "Receita Total"],
+      ...topProducts.map(item => [
+        item.product?.name || "-",
+        item.product?.category?.name || "-",
+        item.totalQuantity?.toString() || "0",
+        `R$ ${(item.totalRevenue || 0).toFixed(2)}`
+      ])
     ];
 
     const csv = data.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     

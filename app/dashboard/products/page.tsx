@@ -101,23 +101,24 @@ export default function ProductsPage() {
 
   const exportProductsToCSV = async () => {
     try {
-      const res = await fetch(`/api/products/top-selling?limit=10000`);
+      const res = await fetch(`/api/products/top-selling?limit=1000`);
       const data = await res.json();
       
       const csvData = [
-        ["ID", "Nome", "Categoria", "Quantidade Vendida", "Receita Total", "Preço Médio"],
-        ...(data.data || []).map((product: any) => [
-          product.id,
-          product.name,
-          product.category || "-",
-          product.totalQuantity || 0,
-          (product.totalRevenue || 0).toFixed(2),
-          product.totalQuantity > 0 ? ((product.totalRevenue || 0) / product.totalQuantity).toFixed(2) : "0.00"
+        ["ID", "Nome", "Categoria", "Quantidade Vendida", "Receita Total", "Preço Médio", "Número de Vendas"],
+        ...(data.data || []).map((item: any) => [
+          item.product?.id || "-",
+          `"${(item.product?.name || "-").replace(/"/g, '""')}"`,
+          `"${(item.product?.category?.name || "-").replace(/"/g, '""')}"`,
+          item.totalQuantity || 0,
+          `R$ ${(item.totalRevenue || 0).toFixed(2)}`,
+          item.totalQuantity > 0 ? `R$ ${((item.totalRevenue || 0) / item.totalQuantity).toFixed(2)}` : "R$ 0.00",
+          item.salesCount || 0
         ])
       ];
 
       const csv = csvData.map(row => row.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       
@@ -129,6 +130,7 @@ export default function ProductsPage() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting products:", error);
+      alert("Erro ao exportar produtos. Tente novamente.");
     }
   };
 

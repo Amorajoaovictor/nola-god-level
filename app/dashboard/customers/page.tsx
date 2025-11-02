@@ -43,18 +43,18 @@ export default function CustomersPage() {
       const csvData = [
         ["ID", "Nome", "Email", "Telefone", "Total de Compras", "Valor Total Gasto", "Data de Cadastro"],
         ...(data.data || []).map((customer: any) => [
-          customer.id,
-          customer.name,
-          customer.email || "-",
+          customer.id || "-",
+          `"${(customer.name || "-").replace(/"/g, '""')}"`,
+          `"${(customer.email || "-").replace(/"/g, '""')}"`,
           customer.phone || "-",
           customer._count?.sales || 0,
-          (customer.totalSpent || 0).toFixed(2),
-          new Date(customer.createdAt).toLocaleDateString("pt-BR")
+          `R$ ${(customer.totalSpent || 0).toFixed(2)}`,
+          customer.createdAt ? new Date(customer.createdAt).toLocaleDateString("pt-BR") : "-"
         ])
       ];
 
       const csv = csvData.map(row => row.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       
@@ -66,6 +66,7 @@ export default function CustomersPage() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting customers:", error);
+      alert("Erro ao exportar clientes. Tente novamente.");
     }
   };
 

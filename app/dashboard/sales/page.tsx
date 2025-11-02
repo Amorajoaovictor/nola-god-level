@@ -221,18 +221,18 @@ export default function SalesPage() {
       const csvData = [
         ["ID", "Cliente", "Loja", "Canal", "Valor Total", "Status", "Data"],
         ...(data.data || []).map((sale: any) => [
-          sale.id,
-          sale.customer?.name || "-",
-          sale.store?.name || "-",
-          sale.channel?.name || "-",
-          sale.totalAmount.toFixed(2),
-          sale.status,
-          new Date(sale.createdAt).toLocaleDateString("pt-BR")
+          sale.id || "-",
+          `"${(sale.customer?.name || "-").replace(/"/g, '""')}"`,
+          `"${(sale.store?.name || "-").replace(/"/g, '""')}"`,
+          `"${(sale.channel?.name || "-").replace(/"/g, '""')}"`,
+          `R$ ${(sale.totalAmount || 0).toFixed(2)}`,
+          sale.status || "-",
+          sale.createdAt ? new Date(sale.createdAt).toLocaleDateString("pt-BR") : "-"
         ])
       ];
 
       const csv = csvData.map(row => row.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       
@@ -244,6 +244,7 @@ export default function SalesPage() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting sales:", error);
+      alert("Erro ao exportar vendas. Tente novamente.");
     }
   };
 
