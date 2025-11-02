@@ -27,14 +27,22 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [showPeriodFilter, setShowPeriodFilter] = useState(false);
+  
+  // Estados temporários (inputs do usuário)
+  const [tempStartDate, setTempStartDate] = useState("");
+  const [tempEndDate, setTempEndDate] = useState("");
+  
+  // Estados aplicados (usados na busca)
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   // Função para buscar summary com cache
   const fetchSummary = useCallback(async (forceRefresh = false) => {
+    const cacheKey = `${CACHE_KEY}_${startDate}_${endDate}`;
+    
     // Verifica cache
     if (!forceRefresh) {
-      const cached = localStorage.getItem(CACHE_KEY);
+      const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
         const age = Date.now() - timestamp;
@@ -50,13 +58,17 @@ export default function DashboardPage() {
     // Busca dados novos
     setRefreshing(true);
     try {
-      const summaryRes = await fetch("/api/sales/summary");
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+      
+      const summaryRes = await fetch(`/api/sales/summary?${params.toString()}`);
       const summaryData = await summaryRes.json();
       const newSummary = summaryData.data;
 
       // Salva no cache
       localStorage.setItem(
-        CACHE_KEY,
+        cacheKey,
         JSON.stringify({
           data: newSummary,
           timestamp: Date.now(),
@@ -72,7 +84,7 @@ export default function DashboardPage() {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [startDate, endDate]);
 
   // Atualização automática a cada 10 minutos
   useEffect(() => {
@@ -87,9 +99,14 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Monta parâmetros para produtos com filtro de data
+        const params = new URLSearchParams({ limit: "5" });
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        
         const [, productsRes] = await Promise.all([
           fetchSummary(), // Usa cache se disponível
-          fetch("/api/products/top-selling?limit=5"),
+          fetch(`/api/products/top-selling?${params.toString()}`),
         ]);
 
         const productsData = await productsRes.json();
@@ -104,20 +121,57 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchSummary]);
 
+  // useEffect separado para atualizar quando filtros forem aplicados
+  useEffect(() => {
+    if (startDate || endDate) {
+      const refetchData = async () => {
+        setLoading(true);
+        try {
+          // Força refresh com novos filtros
+          const params = new URLSearchParams({ limit: "5" });
+          if (startDate) params.append("startDate", startDate);
+          if (endDate) params.append("endDate", endDate);
+          
+          const [, productsRes] = await Promise.all([
+            fetchSummary(true),
+            fetch(`/api/products/top-selling?${params.toString()}`),
+          ]);
+
+          const productsData = await productsRes.json();
+          setTopProducts(productsData.data);
+        } catch (error) {
+          console.error("Error fetching dashboard data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      refetchData();
+    }
+  }, [startDate, endDate]);
+
   const handleRefresh = () => {
     fetchSummary(true);
   };
 
   const handleApplyPeriodFilter = () => {
+    // Aplica os valores temporários aos estados de busca
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
     setShowPeriodFilter(false);
-    fetchSummary(true);
+    // Limpa cache antigo e força refresh
+    localStorage.removeItem(CACHE_KEY);
+    // O useEffect será disparado automaticamente pela mudança de startDate/endDate
   };
 
   const handleClearPeriodFilter = () => {
+    setTempStartDate("");
+    setTempEndDate("");
     setStartDate("");
     setEndDate("");
     setShowPeriodFilter(false);
-    fetchSummary(true);
+    // Limpa cache e recarrega
+    localStorage.removeItem(CACHE_KEY);
   };
 
   const exportToCSV = () => {
@@ -233,8 +287,8 @@ export default function DashboardPage() {
                         </label>
                         <input
                           type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
+                          value={tempStartDate}
+                          onChange={(e) => setTempStartDate(e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -244,8 +298,8 @@ export default function DashboardPage() {
                         </label>
                         <input
                           type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
+                          value={tempEndDate}
+                          onChange={(e) => setTempEndDate(e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>

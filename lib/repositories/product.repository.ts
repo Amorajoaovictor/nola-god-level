@@ -73,9 +73,28 @@ export class ProductRepository implements IProductRepository {
     });
   }
 
-  async findTopSelling(limit = 10): Promise<any[]> {
+  async findTopSelling(limit = 10, startDate?: string, endDate?: string): Promise<any[]> {
+    // Construir where clause para filtro de data
+    const whereClause: any = {};
+    
+    if (startDate || endDate) {
+      whereClause.sale = {};
+      if (startDate) {
+        whereClause.sale.createdAt = { gte: new Date(startDate) };
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        whereClause.sale.createdAt = {
+          ...whereClause.sale.createdAt,
+          lte: endDateTime,
+        };
+      }
+    }
+
     const topProducts = await prisma.productSale.groupBy({
       by: ['productId'],
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
       _sum: {
         quantity: true,
         totalPrice: true,

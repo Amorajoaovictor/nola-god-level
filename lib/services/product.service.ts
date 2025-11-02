@@ -54,7 +54,7 @@ export class ProductService implements IProductService {
     return this.repository.searchByName(name);
   }
 
-  async getTopSellingProducts(limit = 10): Promise<any[]> {
-    return this.repository.findTopSelling(limit);
+  async getTopSellingProducts(limit = 10, startDate?: string, endDate?: string): Promise<any[]> {
+    return this.repository.findTopSelling(limit, startDate, endDate);
   }
 }

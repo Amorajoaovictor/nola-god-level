@@ -9,8 +9,14 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const limitStr = searchParams.get('limit');
   const limit = limitStr ? parseInt(limitStr) : 10;
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
 
-  const topProducts = await productService.getTopSellingProducts(limit);
+  const topProducts = await productService.getTopSellingProducts(
+    limit,
+    startDate || undefined,
+    endDate || undefined
+  );
 
   return successResponse(topProducts);
 });
