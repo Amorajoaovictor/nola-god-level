@@ -28,6 +28,10 @@ export default function DashboardPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [showPeriodFilter, setShowPeriodFilter] = useState(false);
   
+  // Estados de lojas
+  const [stores, setStores] = useState<any[]>([]);
+  const [storeId, setStoreId] = useState("");
+  
   // Estados temporários (inputs do usuário)
   const [tempStartDate, setTempStartDate] = useState("");
   const [tempEndDate, setTempEndDate] = useState("");
@@ -36,9 +40,23 @@ export default function DashboardPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // Buscar lista de lojas
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const res = await fetch("/api/stores");
+        const data = await res.json();
+        setStores(data.data || []);
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+      }
+    };
+    fetchStores();
+  }, []);
+
   // Função para buscar summary com cache
   const fetchSummary = useCallback(async (forceRefresh = false) => {
-    const cacheKey = `${CACHE_KEY}_${startDate}_${endDate}`;
+    const cacheKey = `${CACHE_KEY}_${storeId}_${startDate}_${endDate}`;
     
     // Verifica cache
     if (!forceRefresh) {
@@ -59,6 +77,7 @@ export default function DashboardPage() {
     setRefreshing(true);
     try {
       const params = new URLSearchParams();
+      if (storeId) params.append("storeId", storeId);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
       
@@ -84,7 +103,7 @@ export default function DashboardPage() {
     } finally {
       setRefreshing(false);
     }
-  }, [startDate, endDate]);
+  }, [storeId, startDate, endDate]);
 
   // Atualização automática a cada 10 minutos
   useEffect(() => {
@@ -99,8 +118,9 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Monta parâmetros para produtos com filtro de data
+        // Monta parâmetros para produtos com filtro de data e loja
         const params = new URLSearchParams({ limit: "5" });
+        if (storeId) params.append("storeId", storeId);
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         
@@ -119,16 +139,17 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [fetchSummary]);
+  }, [fetchSummary, storeId]);
 
   // useEffect separado para atualizar quando filtros forem aplicados
   useEffect(() => {
-    if (startDate || endDate) {
+    if (startDate || endDate || storeId) {
       const refetchData = async () => {
         setLoading(true);
         try {
           // Força refresh com novos filtros
           const params = new URLSearchParams({ limit: "5" });
+          if (storeId) params.append("storeId", storeId);
           if (startDate) params.append("startDate", startDate);
           if (endDate) params.append("endDate", endDate);
           
@@ -148,7 +169,7 @@ export default function DashboardPage() {
       
       refetchData();
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, storeId]);
 
   const handleRefresh = () => {
     fetchSummary(true);
@@ -169,6 +190,7 @@ export default function DashboardPage() {
     setTempEndDate("");
     setStartDate("");
     setEndDate("");
+    setStoreId("");
     setShowPeriodFilter(false);
     // Limpa cache e recarrega
     localStorage.removeItem(CACHE_KEY);
@@ -243,6 +265,20 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Filtro de Loja */}
+              <select
+                value={storeId}
+                onChange={(e) => setStoreId(e.target.value)}
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todas as lojas</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
+              </select>
+              
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -334,6 +370,40 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* Filtros Ativos */}
+      {(storeId || startDate || endDate) && (
+        <div className="bg-blue-50 border-b border-blue-100">
+          <div className="container mx-auto px-6 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-blue-900">Filtros ativos:</span>
+                {storeId && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    Loja: {stores.find(s => s.id.toString() === storeId)?.name}
+                  </span>
+                )}
+                {startDate && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    De: {new Date(startDate).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+                {endDate && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    Até: {new Date(endDate).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={handleClearPeriodFilter}
+                className="text-sm text-blue-700 hover:text-blue-900 font-medium"
+              >
+                Limpar todos os filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
