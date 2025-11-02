@@ -8,7 +8,7 @@ export interface ISaleRepository extends IBaseRepository<Sale> {
   findByDateRange(startDate: Date, endDate: Date, skip?: number, take?: number): Promise<Sale[]>;
   findByDaysOfWeek(daysOfWeek: number[], skip?: number, take?: number, filters?: any): Promise<Sale[]>;
   getTotalSalesByStore(storeId: number): Promise<number>;
-  getTotalRevenue(storeId?: number, daysOfWeek?: number[], startDate?: Date, endDate?: Date): Promise<number>;
+  getTotalRevenue(storeIds?: number[], daysOfWeek?: number[], startDate?: Date, endDate?: Date): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
   countByStatus(status: string, filters?: any, daysOfWeek?: number[]): Promise<number>;
 }
@@ -192,7 +192,7 @@ export class SaleRepository implements ISaleRepository {
     return Number(result._sum.totalAmount ?? 0);
   }
 
-  async getTotalRevenue(storeId?: number, daysOfWeek?: number[], startDate?: Date, endDate?: Date): Promise<number> {
+  async getTotalRevenue(storeIds?: number[], daysOfWeek?: number[], startDate?: Date, endDate?: Date): Promise<number> {
     if (daysOfWeek && daysOfWeek.length > 0) {
       // Use raw SQL para filtrar por múltiplos dias da semana
       let query = `
@@ -201,8 +201,8 @@ export class SaleRepository implements ISaleRepository {
         WHERE EXTRACT(DOW FROM "createdAt")::int = ANY(ARRAY[${daysOfWeek.join(',')}])
       `;
       
-      if (storeId) {
-        query += ` AND "storeId" = ${storeId}`;
+      if (storeIds && storeIds.length > 0) {
+        query += ` AND "storeId" = ANY(ARRAY[${storeIds.join(',')}])`;
       }
       
       if (startDate) {
@@ -218,7 +218,9 @@ export class SaleRepository implements ISaleRepository {
     }
 
     const whereClause: any = {};
-    if (storeId) whereClause.storeId = storeId;
+    if (storeIds && storeIds.length > 0) {
+      whereClause.storeId = { in: storeIds };
+    }
     if (startDate || endDate) {
       whereClause.createdAt = {};
       if (startDate) whereClause.createdAt.gte = startDate;
@@ -293,8 +295,19 @@ export class SaleRepository implements ISaleRepository {
       return result[0]?.count ?? 0;
     }
 
+    // Transformar storeIds em formato Prisma correto
+    const whereClause: any = {};
+    if (params) {
+      if (params.storeIds && params.storeIds.length > 0) {
+        whereClause.storeId = { in: params.storeIds };
+      }
+      if (params.channelId) whereClause.channelId = params.channelId;
+      if (params.saleStatusDesc) whereClause.saleStatusDesc = params.saleStatusDesc;
+      if (params.createdAt) whereClause.createdAt = params.createdAt;
+    }
+
     return prisma.sale.count({
-      where: params,
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
     });
   }
 
@@ -316,10 +329,16 @@ export class SaleRepository implements ISaleRepository {
       return result[0]?.count ?? 0;
     }
 
-    const where: any = { saleStatusDesc: status };
+    // Transformar storeIds em formato Prisma correto
+    const whereClause: any = { saleStatusDesc: status };
     if (filters) {
-      Object.assign(where, filters);
+      if (filters.storeIds && filters.storeIds.length > 0) {
+        whereClause.storeId = { in: filters.storeIds };
+      }
+      if (filters.channelId) whereClause.channelId = filters.channelId;
+      if (filters.createdAt) whereClause.createdAt = filters.createdAt;
     }
-    return prisma.sale.count({ where });
+
+    return prisma.sale.count({ where: whereClause });
   }
 }

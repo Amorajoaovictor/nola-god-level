@@ -23,6 +23,7 @@ const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -81,9 +82,13 @@ export default function DashboardPage() {
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
       
+      console.log('Fetching summary with params:', params.toString());
+      
       const summaryRes = await fetch(`/api/sales/summary?${params.toString()}`);
       const summaryData = await summaryRes.json();
       const newSummary = summaryData.data;
+
+      console.log('Summary received:', newSummary);
 
       // Salva no cache
       localStorage.setItem(
@@ -118,19 +123,25 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Busca summary primeiro
+        await fetchSummary();
+        
         // Monta parâmetros para produtos com filtro de data e loja
         const params = new URLSearchParams({ limit: "5" });
         if (storeId) params.append("storeId", storeId);
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         
-        const [, productsRes] = await Promise.all([
-          fetchSummary(), // Usa cache se disponível
+        const [productsRes, countRes] = await Promise.all([
           fetch(`/api/products/top-selling?${params.toString()}`),
+          fetch(`/api/products/count`),
         ]);
 
         const productsData = await productsRes.json();
-        setTopProducts(productsData.data);
+        const countData = await countRes.json();
+        
+        setTopProducts(productsData.data || []);
+        setTotalProducts(countData.data?.total || 0);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -139,37 +150,8 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [fetchSummary, storeId]);
-
-  // useEffect separado para atualizar quando filtros forem aplicados
-  useEffect(() => {
-    if (startDate || endDate || storeId) {
-      const refetchData = async () => {
-        setLoading(true);
-        try {
-          // Força refresh com novos filtros
-          const params = new URLSearchParams({ limit: "5" });
-          if (storeId) params.append("storeId", storeId);
-          if (startDate) params.append("startDate", startDate);
-          if (endDate) params.append("endDate", endDate);
-          
-          const [, productsRes] = await Promise.all([
-            fetchSummary(true),
-            fetch(`/api/products/top-selling?${params.toString()}`),
-          ]);
-
-          const productsData = await productsRes.json();
-          setTopProducts(productsData.data);
-        } catch (error) {
-          console.error("Error fetching dashboard data:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      refetchData();
-    }
-  }, [startDate, endDate, storeId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId, startDate, endDate]);
 
   const handleRefresh = () => {
     fetchSummary(true);
@@ -416,7 +398,9 @@ export default function DashboardPage() {
               <span className="text-green-600">📈</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">
-              {summary?.totalRevenue ? formatCurrency(summary.totalRevenue) : "-"}
+              {summary && summary.totalRevenue !== undefined 
+                ? formatCurrency(Number(summary.totalRevenue)) 
+                : loading ? "..." : "R$ 0,00"}
             </p>
             <p className="text-xs text-slate-500 mt-2">Total acumulado</p>
           </div>
@@ -427,7 +411,9 @@ export default function DashboardPage() {
               <span className="text-blue-600">🛒</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">
-              {summary?.totalSales?.toLocaleString("pt-BR") || "-"}
+              {summary && summary.totalSales !== undefined 
+                ? Number(summary.totalSales).toLocaleString("pt-BR") 
+                : loading ? "..." : "0"}
             </p>
             <p className="text-xs text-slate-500 mt-2">Pedidos realizados</p>
           </div>
@@ -438,7 +424,9 @@ export default function DashboardPage() {
               <span className="text-purple-600">💰</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">
-              {summary?.averageTicket ? formatCurrency(summary.averageTicket) : "-"}
+              {summary && summary.averageTicket !== undefined 
+                ? formatCurrency(Number(summary.averageTicket)) 
+                : loading ? "..." : "R$ 0,00"}
             </p>
             <p className="text-xs text-slate-500 mt-2">Por pedido</p>
           </div>
@@ -449,7 +437,7 @@ export default function DashboardPage() {
               <span className="text-orange-600">📦</span>
             </div>
             <p className="text-2xl font-bold text-slate-900">
-              {topProducts.length > 0 ? "500+" : "-"}
+              {loading ? "..." : totalProducts.toLocaleString("pt-BR")}
             </p>
             <p className="text-xs text-slate-500 mt-2">No catálogo</p>
           </div>

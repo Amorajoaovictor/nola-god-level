@@ -119,10 +119,10 @@ export class SaleService implements ISaleService {
     storeIds?: number[]
   ): Promise<any> {
     const filters: any = {};
-    if (storeIds && storeIds.length > 0) {
-      filters.storeIds = storeIds;
-    } else if (storeId) {
-      filters.storeIds = [storeId];
+    const storeIdsArray = storeIds && storeIds.length > 0 ? storeIds : storeId ? [storeId] : undefined;
+    
+    if (storeIdsArray && storeIdsArray.length > 0) {
+      filters.storeIds = storeIdsArray;
     }
     if (startDate || endDate) {
       filters.createdAt = {};
@@ -130,7 +130,7 @@ export class SaleService implements ISaleService {
       if (endDate) filters.createdAt.lte = endDate;
     }
 
-    const totalRevenue = await this.repository.getTotalRevenue(storeId, daysOfWeek, startDate, endDate);
+    const totalRevenue = await this.repository.getTotalRevenue(storeIdsArray, daysOfWeek, startDate, endDate);
     const salesCount = await this.repository.count(filters, daysOfWeek);
     const completedSales = await this.repository.countByStatus('COMPLETED', filters, daysOfWeek);
     const cancelledSales = await this.repository.countByStatus('CANCELLED', filters, daysOfWeek);
