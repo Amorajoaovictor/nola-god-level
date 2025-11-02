@@ -7,6 +7,7 @@ export interface ISaleRepository extends IBaseRepository<Sale> {
   findByChannelId(channelId: number, skip?: number, take?: number): Promise<Sale[]>;
   findByDateRange(startDate: Date, endDate: Date, skip?: number, take?: number): Promise<Sale[]>;
   getTotalSalesByStore(storeId: number): Promise<number>;
+  getTotalRevenue(storeId?: number): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
 }
 
@@ -109,6 +110,16 @@ export class SaleRepository implements ISaleRepository {
   async getTotalSalesByStore(storeId: number): Promise<number> {
     const result = await prisma.sale.aggregate({
       where: { storeId },
+      _sum: {
+        totalAmount: true,
+      },
+    });
+    return Number(result._sum.totalAmount ?? 0);
+  }
+
+  async getTotalRevenue(storeId?: number): Promise<number> {
+    const result = await prisma.sale.aggregate({
+      where: storeId ? { storeId } : undefined,
       _sum: {
         totalAmount: true,
       },

@@ -79,13 +79,11 @@ export class SaleService implements ISaleService {
     endDate?: Date
   ): Promise<any> {
     const averageTicket = await this.getAverageTicket(storeId);
-    const totalSales = storeId 
-      ? await this.repository.getTotalSalesByStore(storeId)
-      : 0;
+    const totalRevenue = await this.repository.getTotalRevenue(storeId);
     const salesCount = await this.repository.count({ storeId });
 
     return {
-      totalRevenue: totalSales,
+      totalRevenue,
       averageTicket,
       totalSales: salesCount,
       period: {
