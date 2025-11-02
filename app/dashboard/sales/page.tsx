@@ -36,18 +36,15 @@ export default function SalesPage() {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        const [storesRes, channelsRes, byDayRes] = await Promise.all([
+        const [storesRes, channelsRes] = await Promise.all([
           fetch("/api/stores"),
           fetch("/api/channels"),
-          fetch("/api/sales/by-day?days=30"),
         ]);
         const storesData = await storesRes.json();
         const channelsData = await channelsRes.json();
-        const byDayData = await byDayRes.json();
         
         setStores(storesData.data || []);
         setChannels(channelsData.data || []);
-        setSalesByDay(byDayData.data || []);
       } catch (error) {
         console.error("Error fetching filters:", error);
       }
@@ -71,17 +68,20 @@ export default function SalesPage() {
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
 
-        const [salesRes, summaryRes] = await Promise.all([
+        const [salesRes, summaryRes, byDayRes] = await Promise.all([
           fetch(`/api/sales?${params}`),
           fetch(`/api/sales/summary?${params}`),
+          fetch(`/api/sales/by-day?${params}`),
         ]);
         
         const salesData = await salesRes.json();
         const summaryData = await summaryRes.json();
+        const byDayData = await byDayRes.json();
         
         setSales(salesData.data || []);
         setTotal(salesData.pagination?.total || 0);
         setSummary(summaryData.data || {});
+        setSalesByDay(byDayData.data || []);
       } catch (error) {
         console.error("Error fetching sales:", error);
       } finally {
