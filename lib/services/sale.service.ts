@@ -9,7 +9,7 @@ export interface ISaleService {
   getSalesByDateRange(startDate: Date, endDate: Date, page?: number, limit?: number): Promise<Sale[]>;
   getStoreTotalSales(storeId: number): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
-  getSalesSummary(storeId?: number, startDate?: Date, endDate?: Date): Promise<any>;
+  getSalesSummary(storeId?: number, startDate?: Date, endDate?: Date, dayOfWeek?: number): Promise<any>;
 }
 
 export class SaleService implements ISaleService {
@@ -39,7 +39,7 @@ export class SaleService implements ISaleService {
     
     const [data, total] = await Promise.all([
       this.repository.findAll({ skip, take: limit, where }),
-      this.repository.count(where),
+      this.repository.count(where, filters?.dayOfWeek),
     ]);
 
     return {
@@ -89,7 +89,8 @@ export class SaleService implements ISaleService {
   async getSalesSummary(
     storeId?: number,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
+    dayOfWeek?: number
   ): Promise<any> {
     const filters: any = {};
     if (storeId) filters.storeId = storeId;
@@ -100,10 +101,10 @@ export class SaleService implements ISaleService {
     }
 
     const averageTicket = await this.getAverageTicket(storeId);
-    const totalRevenue = await this.repository.getTotalRevenue(storeId);
-    const salesCount = await this.repository.count(filters);
-    const completedSales = await this.repository.countByStatus('COMPLETED', filters);
-    const cancelledSales = await this.repository.countByStatus('CANCELLED', filters);
+    const totalRevenue = await this.repository.getTotalRevenue(storeId, dayOfWeek);
+    const salesCount = await this.repository.count(filters, dayOfWeek);
+    const completedSales = await this.repository.countByStatus('COMPLETED', filters, dayOfWeek);
+    const cancelledSales = await this.repository.countByStatus('CANCELLED', filters, dayOfWeek);
 
     return {
       totalRevenue,

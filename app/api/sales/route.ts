@@ -20,6 +20,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
   const status = searchParams.get('status');
+  const dayOfWeekStr = searchParams.get('dayOfWeek');
 
   const filters = {
     storeId: storeIdStr ? parseInt(storeIdStr) : undefined,
@@ -27,6 +28,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
     startDate: startDateStr ? new Date(startDateStr) : undefined,
     endDate: endDateStr ? new Date(endDateStr) : undefined,
     status: status || undefined,
+    dayOfWeek: dayOfWeekStr ? parseInt(dayOfWeekStr) : undefined,
   };
 
   const result = await saleService.getAllSales(page, limit, filters);

@@ -15,6 +15,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
   const status = searchParams.get('status');
+  const dayOfWeekStr = searchParams.get('dayOfWeek');
 
   let startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -49,6 +50,12 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   if (status) {
     conditions.push(`sale_status_desc = $${paramIndex}`);
     params.push(status);
+    paramIndex++;
+  }
+
+  if (dayOfWeekStr) {
+    conditions.push(`EXTRACT(DOW FROM created_at) = $${paramIndex}`);
+    params.push(parseInt(dayOfWeekStr));
     paramIndex++;
   }
 

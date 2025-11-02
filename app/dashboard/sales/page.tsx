@@ -31,6 +31,7 @@ export default function SalesPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [status, setStatus] = useState<string>("");
+  const [dayOfWeek, setDayOfWeek] = useState<string>(""); // 0-6 (Domingo-Sábado)
 
   // Carregar lojas e canais
   useEffect(() => {
@@ -67,11 +68,18 @@ export default function SalesPage() {
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
+        if (dayOfWeek) params.append("dayOfWeek", dayOfWeek);
+
+        // Se não houver filtro de data, usar últimos 30 dias para os gráficos
+        const chartParams = new URLSearchParams(params);
+        if (!startDate && !endDate) {
+          chartParams.set("days", "30");
+        }
 
         const [salesRes, summaryRes, byDayRes] = await Promise.all([
           fetch(`/api/sales?${params}`),
           fetch(`/api/sales/summary?${params}`),
-          fetch(`/api/sales/by-day?${params}`),
+          fetch(`/api/sales/by-day?${chartParams}`),
         ]);
         
         const salesData = await salesRes.json();
@@ -90,7 +98,7 @@ export default function SalesPage() {
     };
 
     fetchSales();
-  }, [page, storeId, channelId, startDate, endDate, status]);
+  }, [page, storeId, channelId, startDate, endDate, status, dayOfWeek]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -198,7 +206,27 @@ export default function SalesPage() {
                 className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            {(storeId || channelId || startDate || endDate || status) && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600">Dia da Semana:</label>
+              <select
+                value={dayOfWeek}
+                onChange={(e) => {
+                  setDayOfWeek(e.target.value);
+                  setPage(1);
+                }}
+                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos os dias</option>
+                <option value="0">Domingo</option>
+                <option value="1">Segunda-feira</option>
+                <option value="2">Terça-feira</option>
+                <option value="3">Quarta-feira</option>
+                <option value="4">Quinta-feira</option>
+                <option value="5">Sexta-feira</option>
+                <option value="6">Sábado</option>
+              </select>
+            </div>
+            {(storeId || channelId || startDate || endDate || status || dayOfWeek) && (
               <button
                 onClick={() => {
                   setStoreId("");
@@ -206,6 +234,7 @@ export default function SalesPage() {
                   setStartDate("");
                   setEndDate("");
                   setStatus("");
+                  setDayOfWeek("");
                   setPage(1);
                 }}
                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -244,12 +273,13 @@ export default function SalesPage() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Sales Trend Line Chart */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Evolução de Vendas - Últimos 30 Dias
-            </h3>
+        <div className="mb-8">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Sales Trend Line Chart */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Evolução de Vendas {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
+              </h3>
             {salesByDay.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={salesByDay}>
@@ -291,7 +321,7 @@ export default function SalesPage() {
           {/* Revenue Area Chart */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Faturamento Diário - Últimos 30 Dias
+              Faturamento Diário {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
             </h3>
             {salesByDay.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -341,6 +371,7 @@ export default function SalesPage() {
                 Sem dados disponíveis
               </div>
             )}
+          </div>
           </div>
         </div>
 
