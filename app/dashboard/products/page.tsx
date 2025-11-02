@@ -65,12 +65,18 @@ export default function ProductsPage() {
       if (filters?.endDate) params.append('endDate', filters.endDate);
       
       const queryString = params.toString();
+      console.log('Fetching global stats with filters:', filters);
+      console.log('Query string:', queryString);
+      
       const [countRes, statsRes] = await Promise.all([
         fetch(`/api/products/count${queryString ? `?${queryString}` : ''}`),
         fetch(`/api/products/stats${queryString ? `?${queryString}` : ''}`),
       ]);
       const countData = await countRes.json();
       const statsData = await statsRes.json();
+
+      console.log('Count response:', countData);
+      console.log('Stats response:', statsData);
 
       const newStats = statsData.data || {};
       const total = countData.data?.total || 0;
@@ -135,7 +141,7 @@ export default function ProductsPage() {
   }, [limit, fetchGlobalStats, storeId, startDate, endDate]);
 
   const handleRefreshStats = () => {
-    fetchGlobalStats(true);
+    fetchGlobalStats(true, { storeId, startDate, endDate });
   };
 
   const exportProductsToCSV = async () => {
