@@ -9,6 +9,7 @@ export interface ISaleRepository extends IBaseRepository<Sale> {
   getTotalSalesByStore(storeId: number): Promise<number>;
   getTotalRevenue(storeId?: number): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
+  countByStatus(status: string, filters?: any): Promise<number>;
 }
 
 export class SaleRepository implements ISaleRepository {
@@ -17,10 +18,12 @@ export class SaleRepository implements ISaleRepository {
     take?: number;
     orderBy?: Prisma.SaleOrderByWithRelationInput;
     include?: Prisma.SaleInclude;
+    where?: Prisma.SaleWhereInput;
   }): Promise<Sale[]> {
     return prisma.sale.findMany({
       skip: params?.skip,
       take: params?.take,
+      where: params?.where,
       orderBy: params?.orderBy ?? { createdAt: 'desc' },
       include: params?.include,
     });
@@ -167,12 +170,17 @@ export class SaleRepository implements ISaleRepository {
     });
   }
 
-  async count(params?: { storeId?: number; channelId?: number }): Promise<number> {
+  async count(params?: any): Promise<number> {
     return prisma.sale.count({
-      where: {
-        ...(params?.storeId && { storeId: params.storeId }),
-        ...(params?.channelId && { channelId: params.channelId }),
-      },
+      where: params,
     });
+  }
+
+  async countByStatus(status: string, filters?: any): Promise<number> {
+    const where: any = { saleStatusDesc: status };
+    if (filters) {
+      Object.assign(where, filters);
+    }
+    return prisma.sale.count({ where });
   }
 }

@@ -4,20 +4,68 @@ import { useEffect, useState } from "react";
 
 export default function SalesPage() {
   const [sales, setSales] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [channels, setChannels] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 20;
 
+  // Filtros
+  const [storeId, setStoreId] = useState<string>("");
+  const [channelId, setChannelId] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
+
+  // Carregar lojas e canais
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const [storesRes, channelsRes] = await Promise.all([
+          fetch("/api/stores"),
+          fetch("/api/channels"),
+        ]);
+        const storesData = await storesRes.json();
+        const channelsData = await channelsRes.json();
+        
+        setStores(storesData.data || []);
+        setChannels(channelsData.data || []);
+      } catch (error) {
+        console.error("Error fetching filters:", error);
+      }
+    };
+
+    fetchFilters();
+  }, []);
+
   useEffect(() => {
     const fetchSales = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/sales?page=${page}&limit=${limit}`);
-        const data = await res.json();
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+
+        if (storeId) params.append("storeId", storeId);
+        if (channelId) params.append("channelId", channelId);
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (status) params.append("status", status);
+
+        const [salesRes, summaryRes] = await Promise.all([
+          fetch(`/api/sales?${params}`),
+          fetch(`/api/sales/summary?${params}`),
+        ]);
         
-        setSales(data.data || []);
-        setTotal(data.pagination?.total || 0);
+        const salesData = await salesRes.json();
+        const summaryData = await summaryRes.json();
+        
+        setSales(salesData.data || []);
+        setTotal(salesData.pagination?.total || 0);
+        setSummary(summaryData.data || {});
       } catch (error) {
         console.error("Error fetching sales:", error);
       } finally {
@@ -26,7 +74,7 @@ export default function SalesPage() {
     };
 
     fetchSales();
-  }, [page]);
+  }, [page, storeId, channelId, startDate, endDate, status]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -60,21 +108,95 @@ export default function SalesPage() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <select className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Todas as lojas</option>
-                <option>Loja 1</option>
-                <option>Loja 2</option>
+              <select
+                value={storeId}
+                onChange={(e) => {
+                  setStoreId(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todas as lojas</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
               </select>
-              <select className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Todos os canais</option>
-                <option>Presencial</option>
-                <option>iFood</option>
-                <option>Rappi</option>
+              <select
+                value={channelId}
+                onChange={(e) => {
+                  setChannelId(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos os canais</option>
+                {channels.map((channel) => (
+                  <option key={channel.id} value={channel.id}>
+                    {channel.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos os status</option>
+                <option value="COMPLETED">Completa</option>
+                <option value="CANCELLED">Cancelada</option>
               </select>
               <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
                 Exportar
               </button>
             </div>
+          </div>
+          
+          {/* Date Filters */}
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600">De:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setPage(1);
+                }}
+                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600">Até:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setPage(1);
+                }}
+                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {(storeId || channelId || startDate || endDate || status) && (
+              <button
+                onClick={() => {
+                  setStoreId("");
+                  setChannelId("");
+                  setStartDate("");
+                  setEndDate("");
+                  setStatus("");
+                  setPage(1);
+                }}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -85,22 +207,22 @@ export default function SalesPage() {
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Vendas</p>
-            <p className="text-2xl font-bold text-slate-900">{total.toLocaleString("pt-BR")}</p>
+            <p className="text-2xl font-bold text-slate-900">{(summary.totalSales || 0).toLocaleString("pt-BR")}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm">
-            <p className="text-sm font-medium text-slate-600 mb-1">Página Atual</p>
-            <p className="text-2xl font-bold text-slate-900">{page} de {totalPages}</p>
+            <p className="text-sm font-medium text-slate-600 mb-1">Faturamento</p>
+            <p className="text-2xl font-bold text-slate-900">{formatCurrency(Number(summary.totalRevenue || 0))}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Vendas Completas</p>
             <p className="text-2xl font-bold text-green-600">
-              {sales.filter((s) => s.saleStatusDesc === "COMPLETED").length}
+              {(summary.completedSales || 0).toLocaleString("pt-BR")}
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Vendas Canceladas</p>
             <p className="text-2xl font-bold text-red-600">
-              {sales.filter((s) => s.saleStatusDesc === "CANCELLED").length}
+              {(summary.cancelledSales || 0).toLocaleString("pt-BR")}
             </p>
           </div>
         </div>
