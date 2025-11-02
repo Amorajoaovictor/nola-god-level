@@ -120,6 +120,17 @@ export default function SalesPage() {
   const [endDate, setEndDate] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [selectedDays, setSelectedDays] = useState<number[]>([]); // Array de dias selecionados
+  
+  // Store searchbox
+  const [storeSearchOpen, setStoreSearchOpen] = useState(false);
+  const [storeSearchQuery, setStoreSearchQuery] = useState("");
+  
+  const filteredStores = stores.filter(store => 
+    store.name.toLowerCase().includes(storeSearchQuery.toLowerCase()) ||
+    store.id.toString().includes(storeSearchQuery)
+  );
+  
+  const selectedStore = stores.find(s => s.id.toString() === storeId);
 
   // Carregar lojas e canais
   useEffect(() => {
@@ -280,21 +291,78 @@ export default function SalesPage() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <select
-                value={storeId}
-                onChange={(e) => {
-                  setStoreId(e.target.value);
-                  setPage(1);
-                }}
-                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todas as lojas</option>
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </select>
+              {/* Store Searchbox */}
+              <div className="relative">
+                <button
+                  onClick={() => setStoreSearchOpen(!storeSearchOpen)}
+                  className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-slate-50 flex items-center gap-2 min-w-[200px] justify-between"
+                >
+                  <span className="truncate">
+                    {selectedStore ? selectedStore.name : "Todas as lojas"}
+                  </span>
+                  <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {storeSearchOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setStoreSearchOpen(false)}
+                    />
+                    <div className="absolute top-full left-0 mt-1 w-[300px] bg-white border border-slate-300 rounded-lg shadow-lg z-20">
+                      <div className="p-2 border-b border-slate-200">
+                        <input
+                          type="text"
+                          placeholder="Buscar loja..."
+                          value={storeSearchQuery}
+                          onChange={(e) => setStoreSearchQuery(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-[300px] overflow-y-auto">
+                        <button
+                          onClick={() => {
+                            setStoreId("");
+                            setPage(1);
+                            setStoreSearchOpen(false);
+                            setStoreSearchQuery("");
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
+                        >
+                          <span className="font-medium">Todas as lojas</span>
+                        </button>
+                        {filteredStores.length > 0 ? (
+                          filteredStores.map((store) => (
+                            <button
+                              key={store.id}
+                              onClick={() => {
+                                setStoreId(store.id.toString());
+                                setPage(1);
+                                setStoreSearchOpen(false);
+                                setStoreSearchQuery("");
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 ${
+                                storeId === store.id.toString() ? 'bg-blue-50 text-blue-700' : ''
+                              }`}
+                            >
+                              <span>{store.name}</span>
+                              <span className="text-xs text-slate-500">#{store.id}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-slate-500 text-center">
+                            Nenhuma loja encontrada
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
               <select
                 value={channelId}
                 onChange={(e) => {
