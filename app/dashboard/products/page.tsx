@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 export default function ProductsPage() {
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [globalStats, setGlobalStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(20);
 
@@ -12,15 +13,18 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const [productsRes, countRes] = await Promise.all([
+        const [productsRes, countRes, statsRes] = await Promise.all([
           fetch(`/api/products/top-selling?limit=${limit}`),
           fetch(`/api/products/count`),
+          fetch(`/api/products/stats`),
         ]);
         const productsData = await productsRes.json();
         const countData = await countRes.json();
+        const statsData = await statsRes.json();
         
         setTopProducts(productsData.data || []);
         setTotalProducts(countData.data?.total || 0);
+        setGlobalStats(statsData.data || {});
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -75,41 +79,71 @@ export default function ProductsPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <p className="text-sm font-medium text-slate-600 mb-1">
-              Total de Produtos
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {totalProducts.toLocaleString("pt-BR")}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Exibindo top {topProducts.length} produtos
-            </p>
+        <div className="space-y-6 mb-8">
+          {/* Linha 1 - Métricas Globais */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <p className="text-sm font-medium text-slate-600 mb-1">
+                Total de Produtos
+              </p>
+              <p className="text-2xl font-bold text-slate-900">
+                {totalProducts.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Cadastrados no sistema
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <p className="text-sm font-medium text-slate-600 mb-1">
+                Receita Total (Todos)
+              </p>
+              <p className="text-2xl font-bold text-green-600">
+                {formatCurrency(globalStats.totalRevenue || 0)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Todos os produtos vendidos
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <p className="text-sm font-medium text-slate-600 mb-1">
+                Quantidade Total
+              </p>
+              <p className="text-2xl font-bold text-blue-600">
+                {(globalStats.totalQuantity || 0).toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Unidades vendidas (total)
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <p className="text-sm font-medium text-slate-600 mb-1">
-              Receita Total (Top {limit})
-            </p>
-            <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalRevenue)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Soma dos produtos listados
-            </p>
-          </div>
+          {/* Linha 2 - Métricas do Top N */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-lg shadow-sm">
+              <p className="text-sm font-medium text-emerald-900 mb-1">
+                Receita (Top {limit})
+              </p>
+              <p className="text-2xl font-bold text-emerald-700">
+                {formatCurrency(totalRevenue)}
+              </p>
+              <p className="text-xs text-emerald-600 mt-1">
+                Exibindo top {topProducts.length} produtos mais vendidos
+              </p>
+            </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <p className="text-sm font-medium text-slate-600 mb-1">
-              Quantidade Vendida
-            </p>
-            <p className="text-2xl font-bold text-blue-600">
-              {totalQuantity.toLocaleString("pt-BR")}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Unidades vendidas
-            </p>
+            <div className="bg-gradient-to-br from-sky-50 to-sky-100 p-6 rounded-lg shadow-sm">
+              <p className="text-sm font-medium text-sky-900 mb-1">
+                Quantidade (Top {limit})
+              </p>
+              <p className="text-2xl font-bold text-sky-700">
+                {totalQuantity.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-sky-600 mt-1">
+                Unidades dos produtos listados
+              </p>
+            </div>
           </div>
         </div>
 
