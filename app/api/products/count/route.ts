@@ -13,8 +13,6 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
 
-  console.log('Products Count API - Filters:', { storeIdStr, startDateStr, endDateStr });
-
   // Se houver filtros de loja/data, contar produtos que tiveram vendas nesse filtro
   if (storeIdStr || startDateStr || endDateStr) {
     const whereClause: any = {};
@@ -38,8 +36,6 @@ export const GET = asyncHandler(async (req: NextRequest) => {
       }
     }
 
-    console.log('Products Count API - Where clause:', JSON.stringify(whereClause, null, 2));
-
     // Contar produtos únicos que tiveram vendas com os filtros aplicados
     const productSales = await prisma.productSale.findMany({
       where: whereClause,
@@ -48,8 +44,6 @@ export const GET = asyncHandler(async (req: NextRequest) => {
       },
       distinct: ['productId'],
     });
-
-    console.log('Products Count API - Unique products found:', productSales.length);
 
     return successResponse({ total: productSales.length });
   }
@@ -60,8 +54,6 @@ export const GET = asyncHandler(async (req: NextRequest) => {
       deletedAt: null,
     },
   });
-
-  console.log('Products Count API - Total products (no filter):', totalProducts);
 
   return successResponse({ total: totalProducts });
 });

@@ -65,8 +65,6 @@ export default function ProductsPage() {
       if (filters?.endDate) params.append('endDate', filters.endDate);
       
       const queryString = params.toString();
-      console.log('Fetching global stats with filters:', filters);
-      console.log('Query string:', queryString);
       
       const [countRes, statsRes] = await Promise.all([
         fetch(`/api/products/count${queryString ? `?${queryString}` : ''}`),
@@ -74,9 +72,6 @@ export default function ProductsPage() {
       ]);
       const countData = await countRes.json();
       const statsData = await statsRes.json();
-
-      console.log('Count response:', countData);
-      console.log('Stats response:', statsData);
 
       const newStats = statsData.data || {};
       const total = countData.data?.total || 0;
