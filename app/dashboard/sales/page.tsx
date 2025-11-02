@@ -14,12 +14,100 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// Componente Heatmap
+function HeatmapChart({ data, selectedDays }: { data: any[]; selectedDays?: number[] }) {
+  const allDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  // Se há dias selecionados, mostrar apenas eles; senão, mostrar todos
+  const daysToShow = selectedDays && selectedDays.length > 0 
+    ? selectedDays.sort((a, b) => a - b)
+    : [0, 1, 2, 3, 4, 5, 6];
+  
+  const days = daysToShow.map(idx => allDays[idx]);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  // Criar matriz de dados apenas para os dias filtrados
+  const matrix: number[][] = daysToShow.map(() => Array(24).fill(0));
+  
+  data.forEach((item) => {
+    const dayIndex = daysToShow.indexOf(item.dayOfWeek);
+    if (dayIndex !== -1) {
+      matrix[dayIndex][item.hour] = item.totalSales;
+    }
+  });
+
+  // Encontrar máximo para normalizar cores
+  const maxSales = Math.max(...data.map(d => d.totalSales), 1);
+
+  const getColor = (value: number) => {
+    if (value === 0) return "#f1f5f9"; // slate-100
+    const intensity = value / maxSales;
+    if (intensity < 0.2) return "#dbeafe"; // blue-100
+    if (intensity < 0.4) return "#93c5fd"; // blue-300
+    if (intensity < 0.6) return "#60a5fa"; // blue-400
+    if (intensity < 0.8) return "#3b82f6"; // blue-500
+    return "#1d4ed8"; // blue-700
+  };
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-[800px]">
+        {/* Header com horas */}
+        <div className="flex mb-1">
+          <div className="w-16"></div>
+          {hours.map((hour) => (
+            <div key={hour} className="flex-1 text-center text-xs text-slate-600 font-medium">
+              {hour}h
+            </div>
+          ))}
+        </div>
+
+        {/* Matriz do heatmap */}
+        {days.map((day, dayIndex) => (
+          <div key={day} className="flex mb-1">
+            <div className="w-16 flex items-center justify-end pr-2 text-xs font-medium text-slate-700">
+              {day}
+            </div>
+            {hours.map((hour) => {
+              const value = matrix[dayIndex][hour];
+              return (
+                <div
+                  key={`${dayIndex}-${hour}`}
+                  className="flex-1 aspect-square flex items-center justify-center text-xs font-medium rounded border border-white hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer"
+                  style={{ backgroundColor: getColor(value) }}
+                  title={`${day} ${hour}h: ${value} vendas`}
+                >
+                  {value > 0 ? value : ""}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {/* Legenda */}
+        <div className="mt-4 flex items-center gap-2 justify-center">
+          <span className="text-xs text-slate-600">Menos vendas</span>
+          <div className="flex gap-1">
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: "#f1f5f9" }}></div>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: "#dbeafe" }}></div>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: "#93c5fd" }}></div>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: "#60a5fa" }}></div>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: "#3b82f6" }}></div>
+            <div className="w-6 h-6 rounded" style={{ backgroundColor: "#1d4ed8" }}></div>
+          </div>
+          <span className="text-xs text-slate-600">Mais vendas</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SalesPage() {
   const [sales, setSales] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [channels, setChannels] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>({});
   const [salesByDay, setSalesByDay] = useState<any[]>([]);
+  const [heatmapData, setHeatmapData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -31,7 +119,7 @@ export default function SalesPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const [dayOfWeek, setDayOfWeek] = useState<string>(""); // 0-6 (Domingo-Sábado)
+  const [selectedDays, setSelectedDays] = useState<number[]>([]); // Array de dias selecionados
 
   // Carregar lojas e canais
   useEffect(() => {
@@ -68,7 +156,20 @@ export default function SalesPage() {
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
-        if (dayOfWeek) params.append("dayOfWeek", dayOfWeek);
+        // Adicionar cada dia selecionado como parâmetro separado
+        selectedDays.forEach(day => params.append("daysOfWeek", day.toString()));
+
+        // Params para heatmap (COM os dias selecionados para filtrar o heatmap)
+        const heatmapParams = new URLSearchParams();
+        if (storeId) heatmapParams.append("storeId", storeId);
+        if (channelId) heatmapParams.append("channelId", channelId);
+        if (startDate) heatmapParams.append("startDate", startDate);
+        if (endDate) heatmapParams.append("endDate", endDate);
+        if (status) heatmapParams.append("status", status);
+        selectedDays.forEach(day => heatmapParams.append("daysOfWeek", day.toString()));
+        if (!startDate && !endDate) {
+          heatmapParams.set("days", "30");
+        }
 
         // Se não houver filtro de data, usar últimos 30 dias para os gráficos
         const chartParams = new URLSearchParams(params);
@@ -76,20 +177,23 @@ export default function SalesPage() {
           chartParams.set("days", "30");
         }
 
-        const [salesRes, summaryRes, byDayRes] = await Promise.all([
+        const [salesRes, summaryRes, byDayRes, heatmapRes] = await Promise.all([
           fetch(`/api/sales?${params}`),
           fetch(`/api/sales/summary?${params}`),
           fetch(`/api/sales/by-day?${chartParams}`),
+          fetch(`/api/sales/heatmap?${heatmapParams}`),
         ]);
         
         const salesData = await salesRes.json();
         const summaryData = await summaryRes.json();
         const byDayData = await byDayRes.json();
+        const heatmapDataRes = await heatmapRes.json();
         
         setSales(salesData.data || []);
         setTotal(salesData.pagination?.total || 0);
         setSummary(summaryData.data || {});
         setSalesByDay(byDayData.data || []);
+        setHeatmapData(heatmapDataRes.data || []);
       } catch (error) {
         console.error("Error fetching sales:", error);
       } finally {
@@ -98,7 +202,7 @@ export default function SalesPage() {
     };
 
     fetchSales();
-  }, [page, storeId, channelId, startDate, endDate, status, dayOfWeek]);
+  }, [page, storeId, channelId, startDate, endDate, status, selectedDays]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -206,27 +310,47 @@ export default function SalesPage() {
                 className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-600">Dia da Semana:</label>
-              <select
-                value={dayOfWeek}
-                onChange={(e) => {
-                  setDayOfWeek(e.target.value);
-                  setPage(1);
-                }}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todos os dias</option>
-                <option value="0">Domingo</option>
-                <option value="1">Segunda-feira</option>
-                <option value="2">Terça-feira</option>
-                <option value="3">Quarta-feira</option>
-                <option value="4">Quinta-feira</option>
-                <option value="5">Sexta-feira</option>
-                <option value="6">Sábado</option>
-              </select>
+          </div>
+
+          {/* Day of Week Filter with Checkboxes */}
+          <div className="mt-4 flex items-start gap-4">
+            <label className="text-sm font-medium text-slate-600 pt-2">Dias da Semana:</label>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { value: 0, label: "Dom" },
+                { value: 1, label: "Seg" },
+                { value: 2, label: "Ter" },
+                { value: 3, label: "Qua" },
+                { value: 4, label: "Qui" },
+                { value: 5, label: "Sex" },
+                { value: 6, label: "Sáb" },
+              ].map((day) => (
+                <label
+                  key={day.value}
+                  className="flex items-center gap-2 px-3 py-2 text-sm border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                  style={{
+                    backgroundColor: selectedDays.includes(day.value) ? "#dbeafe" : "transparent",
+                    borderColor: selectedDays.includes(day.value) ? "#3b82f6" : "#cbd5e1",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDays.includes(day.value)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedDays([...selectedDays, day.value]);
+                      } else {
+                        setSelectedDays(selectedDays.filter(d => d !== day.value));
+                      }
+                      setPage(1);
+                    }}
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="font-medium">{day.label}</span>
+                </label>
+              ))}
             </div>
-            {(storeId || channelId || startDate || endDate || status || dayOfWeek) && (
+            {(storeId || channelId || startDate || endDate || status || selectedDays.length > 0) && (
               <button
                 onClick={() => {
                   setStoreId("");
@@ -234,7 +358,7 @@ export default function SalesPage() {
                   setStartDate("");
                   setEndDate("");
                   setStatus("");
-                  setDayOfWeek("");
+                  setSelectedDays([]);
                   setPage(1);
                 }}
                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -372,6 +496,39 @@ export default function SalesPage() {
               </div>
             )}
           </div>
+          </div>
+        </div>
+
+        {/* Heatmap - Sales by Day of Week and Hour */}
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Mapa de Calor - Vendas por Dia da Semana e Hora
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">
+                {startDate && endDate 
+                  ? `Período: ${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')}`
+                  : startDate 
+                  ? `A partir de ${new Date(startDate).toLocaleDateString('pt-BR')}`
+                  : endDate
+                  ? `Até ${new Date(endDate).toLocaleDateString('pt-BR')}`
+                  : 'Últimos 30 dias'
+                }
+                {heatmapData.length > 0 && (
+                  <span className="ml-2">• {heatmapData.length} horários com vendas</span>
+                )}
+              </p>
+            </div>
+            {heatmapData.length > 0 ? (
+              <div className="overflow-x-auto">
+                <HeatmapChart data={heatmapData} selectedDays={selectedDays} />
+              </div>
+            ) : (
+              <div className="h-[400px] flex items-center justify-center text-slate-500">
+                Sem dados disponíveis para o período selecionado
+              </div>
+            )}
           </div>
         </div>
 

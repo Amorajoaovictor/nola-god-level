@@ -7,9 +7,9 @@ export interface ISaleRepository extends IBaseRepository<Sale> {
   findByChannelId(channelId: number, skip?: number, take?: number): Promise<Sale[]>;
   findByDateRange(startDate: Date, endDate: Date, skip?: number, take?: number): Promise<Sale[]>;
   getTotalSalesByStore(storeId: number): Promise<number>;
-  getTotalRevenue(storeId?: number, dayOfWeek?: number): Promise<number>;
+  getTotalRevenue(storeId?: number, daysOfWeek?: number[]): Promise<number>;
   getAverageTicket(storeId?: number, channelId?: number): Promise<number>;
-  countByStatus(status: string, filters?: any, dayOfWeek?: number): Promise<number>;
+  countByStatus(status: string, filters?: any, daysOfWeek?: number[]): Promise<number>;
 }
 
 export class SaleRepository implements ISaleRepository {
@@ -120,13 +120,13 @@ export class SaleRepository implements ISaleRepository {
     return Number(result._sum.totalAmount ?? 0);
   }
 
-  async getTotalRevenue(storeId?: number, dayOfWeek?: number): Promise<number> {
-    if (dayOfWeek !== undefined) {
-      // Use raw SQL para filtrar por dia da semana (0 = Domingo, 6 = Sábado)
+  async getTotalRevenue(storeId?: number, daysOfWeek?: number[]): Promise<number> {
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      // Use raw SQL para filtrar por múltiplos dias da semana
       let query = `
         SELECT COALESCE(SUM("totalAmount"), 0)::numeric as total
         FROM "Sale"
-        WHERE EXTRACT(DOW FROM "createdAt") = ${dayOfWeek}
+        WHERE EXTRACT(DOW FROM "createdAt")::int = ANY(ARRAY[${daysOfWeek.join(',')}])
       `;
       
       if (storeId) {
@@ -186,10 +186,10 @@ export class SaleRepository implements ISaleRepository {
     });
   }
 
-  async count(params?: any, dayOfWeek?: number): Promise<number> {
-    if (dayOfWeek !== undefined) {
-      // Use raw SQL para filtrar por dia da semana
-      let query = 'SELECT COUNT(*)::int as count FROM "Sale" WHERE EXTRACT(DOW FROM "createdAt") = ' + dayOfWeek;
+  async count(params?: any, daysOfWeek?: number[]): Promise<number> {
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      // Use raw SQL para filtrar por múltiplos dias da semana
+      let query = `SELECT COUNT(*)::int as count FROM "Sale" WHERE EXTRACT(DOW FROM "createdAt")::int = ANY(ARRAY[${daysOfWeek.join(',')}])`;
       
       if (params) {
         if (params.storeId) query += ' AND "storeId" = ' + params.storeId;
@@ -208,10 +208,10 @@ export class SaleRepository implements ISaleRepository {
     });
   }
 
-  async countByStatus(status: string, filters?: any, dayOfWeek?: number): Promise<number> {
-    if (dayOfWeek !== undefined) {
-      // Use raw SQL para filtrar por dia da semana
-      let query = `SELECT COUNT(*)::int as count FROM "Sale" WHERE "saleStatusDesc" = '${status}' AND EXTRACT(DOW FROM "createdAt") = ${dayOfWeek}`;
+  async countByStatus(status: string, filters?: any, daysOfWeek?: number[]): Promise<number> {
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      // Use raw SQL para filtrar por múltiplos dias da semana
+      let query = `SELECT COUNT(*)::int as count FROM "Sale" WHERE "saleStatusDesc" = '${status}' AND EXTRACT(DOW FROM "createdAt")::int = ANY(ARRAY[${daysOfWeek.join(',')}])`;
       
       if (filters) {
         if (filters.storeId) query += ' AND "storeId" = ' + filters.storeId;

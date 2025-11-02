@@ -8,5 +8,5 @@ export interface IBaseRepository<T> {
   create(data: any): Promise<T>;
   update(id: number, data: any): Promise<T>;
   delete(id: number): Promise<T>;
-  count(params?: any, dayOfWeek?: number): Promise<number>;
+  count(params?: any, daysOfWeek?: number[]): Promise<number>;
 }

@@ -12,14 +12,14 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
   const status = searchParams.get('status');
-  const dayOfWeekStr = searchParams.get('dayOfWeek');
+  const daysOfWeek = searchParams.getAll('daysOfWeek');
 
   const storeId = storeIdStr ? parseInt(storeIdStr) : undefined;
   const startDate = startDateStr ? new Date(startDateStr) : undefined;
   const endDate = endDateStr ? new Date(endDateStr) : undefined;
-  const dayOfWeek = dayOfWeekStr ? parseInt(dayOfWeekStr) : undefined;
+  const daysOfWeekNumbers = daysOfWeek.length > 0 ? daysOfWeek.map(d => parseInt(d)) : undefined;
 
-  const summary = await saleService.getSalesSummary(storeId, startDate, endDate, dayOfWeek);
+  const summary = await saleService.getSalesSummary(storeId, startDate, endDate, daysOfWeekNumbers);
 
   return successResponse(summary);
 });
