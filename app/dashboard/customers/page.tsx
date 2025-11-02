@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -13,11 +14,17 @@ export default function CustomersPage() {
     const fetchCustomers = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/customers?page=${page}&limit=${limit}`);
-        const data = await res.json();
+        const [customersRes, statsRes] = await Promise.all([
+          fetch(`/api/customers?page=${page}&limit=${limit}`),
+          fetch(`/api/customers/stats`),
+        ]);
         
-        setCustomers(data.data || []);
-        setTotal(data.pagination?.total || 0);
+        const customersData = await customersRes.json();
+        const statsData = await statsRes.json();
+        
+        setCustomers(customersData.data || []);
+        setTotal(customersData.pagination?.total || 0);
+        setStats(statsData.data || {});
       } catch (error) {
         console.error("Error fetching customers:", error);
       } finally {
@@ -29,8 +36,6 @@ export default function CustomersPage() {
   }, [page]);
 
   const totalPages = Math.ceil(total / limit);
-  const customersWithEmail = customers.filter((c) => c.email).length;
-  const customersWithPhone = customers.filter((c) => c.phoneNumber).length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -65,30 +70,37 @@ export default function CustomersPage() {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Clientes</p>
             <p className="text-2xl font-bold text-slate-900">
-              {total.toLocaleString("pt-BR")}
+              {(stats.total || 0).toLocaleString("pt-BR")}
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Com E-mail</p>
-            <p className="text-2xl font-bold text-green-600">{customersWithEmail}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {(stats.withEmail || 0).toLocaleString("pt-BR")}
+            </p>
             <p className="text-xs text-slate-500 mt-1">
-              {((customersWithEmail / customers.length) * 100 || 0).toFixed(1)}% do total
+              {stats.total ? ((stats.withEmail / stats.total) * 100).toFixed(1) : 0}% do total
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Com Telefone</p>
-            <p className="text-2xl font-bold text-blue-600">{customersWithPhone}</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {(stats.withPhone || 0).toLocaleString("pt-BR")}
+            </p>
             <p className="text-xs text-slate-500 mt-1">
-              {((customersWithPhone / customers.length) * 100 || 0).toFixed(1)}% do total
+              {stats.total ? ((stats.withPhone / stats.total) * 100).toFixed(1) : 0}% do total
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Aceita Promoções</p>
             <p className="text-2xl font-bold text-purple-600">
-              {customers.filter((c) => c.receivePromotionsEmail).length}
+              {(stats.promotionsEmail || 0).toLocaleString("pt-BR")}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Por e-mail
             </p>
           </div>
         </div>
