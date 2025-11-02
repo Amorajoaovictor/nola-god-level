@@ -35,10 +35,13 @@ export default function ProductsPage() {
     fetchStores();
   }, []);
 
-  // Função para buscar stats globais com cache
-  const fetchGlobalStats = useCallback(async (forceRefresh = false) => {
-    // Verifica cache
-    if (!forceRefresh) {
+  // Função para buscar stats globais com cache (agora com filtros)
+  const fetchGlobalStats = useCallback(async (forceRefresh = false, filters?: { storeId?: string, startDate?: string, endDate?: string }) => {
+    // Se houver filtros, não usar cache
+    const useCache = !filters?.storeId && !filters?.startDate && !filters?.endDate;
+    
+    // Verifica cache apenas se não houver filtros
+    if (!forceRefresh && useCache) {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
@@ -55,9 +58,16 @@ export default function ProductsPage() {
     // Busca dados novos
     setRefreshingStats(true);
     try {
+      // Construir query params
+      const params = new URLSearchParams();
+      if (filters?.storeId) params.append('storeId', filters.storeId);
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      
+      const queryString = params.toString();
       const [countRes, statsRes] = await Promise.all([
-        fetch(`/api/products/count`),
-        fetch(`/api/products/stats`),
+        fetch(`/api/products/count${queryString ? `?${queryString}` : ''}`),
+        fetch(`/api/products/stats${queryString ? `?${queryString}` : ''}`),
       ]);
       const countData = await countRes.json();
       const statsData = await statsRes.json();
@@ -65,14 +75,16 @@ export default function ProductsPage() {
       const newStats = statsData.data || {};
       const total = countData.data?.total || 0;
 
-      // Salva no cache
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          data: newStats,
-          timestamp: Date.now(),
-        })
-      );
+      // Salva no cache apenas se não houver filtros
+      if (useCache) {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            data: newStats,
+            timestamp: Date.now(),
+          })
+        );
+      }
 
       setGlobalStats(newStats);
       setTotalProducts(total);
@@ -107,7 +119,7 @@ export default function ProductsPage() {
         
         const [productsRes] = await Promise.all([
           fetch(`/api/products/top-selling?${params.toString()}`),
-          fetchGlobalStats(), // Usa cache se disponível
+          fetchGlobalStats(false, { storeId, startDate, endDate }), // Passa filtros para stats
         ]);
         const productsData = await productsRes.json();
         
@@ -327,31 +339,37 @@ export default function ProductsPage() {
                 {totalProducts.toLocaleString("pt-BR")}
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                Cadastrados no sistema
+                {(storeId || startDate || endDate) 
+                  ? "Produtos vendidos no filtro"
+                  : "Cadastrados no sistema"}
               </p>
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-slate-600 mb-1">
-                Receita Total (Todos)
+                Receita Total {(storeId || startDate || endDate) && "(Filtrada)"}
               </p>
               <p className="text-2xl font-bold text-green-600">
                 {formatCurrency(globalStats.totalRevenue || 0)}
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                Todos os produtos vendidos
+                {(storeId || startDate || endDate) 
+                  ? "Produtos no período/loja selecionada"
+                  : "Todos os produtos vendidos"}
               </p>
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-slate-600 mb-1">
-                Quantidade Total
+                Quantidade Total {(storeId || startDate || endDate) && "(Filtrada)"}
               </p>
               <p className="text-2xl font-bold text-blue-600">
                 {(globalStats.totalQuantity || 0).toLocaleString("pt-BR")}
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                Unidades vendidas (total)
+                {(storeId || startDate || endDate) 
+                  ? "Unidades no período/loja selecionada"
+                  : "Unidades vendidas (total)"}
               </p>
             </div>
           </div>
