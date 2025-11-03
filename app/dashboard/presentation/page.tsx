@@ -311,7 +311,7 @@ function TwoColumnsComponent({ content, components }: any) {
   );
 }
 
-function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refreshTrigger }: any) {
+function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refreshTrigger, onDataLoaded }: any) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -330,6 +330,13 @@ function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refr
       setData(content.data || []);
     }
   }, [dataSource, refreshTrigger]); // Atualiza quando refreshTrigger mudar
+
+  // Notificar quando dados forem carregados
+  useEffect(() => {
+    if (data && data.length > 0 && onDataLoaded) {
+      onDataLoaded(data);
+    }
+  }, [data]);
 
   const buildApiUrl = (config: ApiConfig) => {
     const params = new URLSearchParams(config.params || {});
@@ -576,8 +583,11 @@ function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refr
   );
 }
 
-function renderComponent(component: SlideComponent, refreshTrigger?: number) {
+function renderComponent(component: SlideComponent, refreshTrigger?: number, onDataLoaded?: (componentId: string, data: any[]) => void) {
   const { type, content, styles, dataSource, apiConfig, dataSeries } = component;
+
+  // Criar callback específico para este componente
+  const handleDataLoaded = onDataLoaded ? (data: any[]) => onDataLoaded(component.id, data) : undefined;
 
   switch (type) {
     case "title":
@@ -596,7 +606,7 @@ function renderComponent(component: SlideComponent, refreshTrigger?: number) {
     case "lineChart":
     case "areaChart":
     case "pieChart":
-      return <ChartComponent content={content} type={type} dataSource={dataSource} apiConfig={apiConfig} dataSeries={dataSeries} refreshTrigger={refreshTrigger} />;
+      return <ChartComponent content={content} type={type} dataSource={dataSource} apiConfig={apiConfig} dataSeries={dataSeries} refreshTrigger={refreshTrigger} onDataLoaded={handleDataLoaded} />;
     default:
       return null;
   }
@@ -618,6 +628,9 @@ export default function PresentationPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
+  
+  // Armazenar dados carregados de APIs para cada componente
+  const [componentLoadedData, setComponentLoadedData] = useState<Map<string, any[]>>(new Map());
 
   const currentSlide = slides[currentSlideIndex];
 
@@ -628,6 +641,12 @@ export default function PresentationPage() {
       try {
         const slideData = JSON.parse(editingSlideData);
         
+        console.group('📥 Carregando slide para edição');
+        console.log('Slide original:', slideData);
+        console.log('Type:', slideData.type);
+        console.log('Data:', slideData.data);
+        console.log('Data is array?', Array.isArray(slideData.data));
+        
         // Converter o slide do formato de apresentação para o formato do editor
         if (slideData.type === 'custom' && Array.isArray(slideData.data)) {
           const convertedSlide: Slide = {
@@ -637,12 +656,26 @@ export default function PresentationPage() {
             background: slideData.config?.background || "#ffffff",
           };
           
+          console.log('Slide convertido:', convertedSlide);
+          console.log('Components:', convertedSlide.components);
+          convertedSlide.components.forEach((comp: any, idx: number) => {
+            console.log(`Component [${idx}]:`, {
+              type: comp.type,
+              id: comp.id,
+              content: comp.content
+            });
+          });
+          console.groupEnd();
+          
           setSlides([convertedSlide]);
           setCurrentSlideIndex(0);
           setEditingSlideId(slideData.id);
           
           // Limpar o sessionStorage
           sessionStorage.removeItem('editingSlide');
+        } else {
+          console.error('Slide não é do tipo custom ou data não é array');
+          console.groupEnd();
         }
       } catch (error) {
         console.error('Erro ao carregar slide para edição:', error);
@@ -660,9 +693,30 @@ export default function PresentationPage() {
     setSaveStatus('saving');
     
     try {
+      // Mesclar dados carregados da API nos componentes
+      const componentsWithLoadedData = currentSlide.components.map(component => {
+        if (component.dataSource === 'api' && componentLoadedData.has(component.id)) {
+          // Se temos dados carregados da API, salvá-los no content.data
+          const loadedData = componentLoadedData.get(component.id);
+          console.log(`🔄 Mesclando dados da API para componente ${component.id}:`, {
+            oldDataLength: component.content?.data?.length || 0,
+            newDataLength: loadedData?.length || 0
+          });
+          
+          return {
+            ...component,
+            content: {
+              ...component.content,
+              data: loadedData || component.content.data
+            }
+          };
+        }
+        return component;
+      });
+      
       const slideData = {
         title: currentSlide.title || 'Slide Customizado',
-        data: currentSlide.components,
+        data: componentsWithLoadedData,
         config: {
           background: currentSlide.background,
         },
@@ -671,7 +725,8 @@ export default function PresentationPage() {
       console.log('💾 Salvando slide:', {
         editingSlideId,
         slideData,
-        componentsCount: currentSlide.components.length
+        componentsCount: componentsWithLoadedData.length,
+        componentsWithApiData: componentsWithLoadedData.filter(c => c.dataSource === 'api').length
       });
       
       if (editingSlideId) {
@@ -858,7 +913,13 @@ export default function PresentationPage() {
           <div className="w-full max-w-6xl space-y-8">
             {currentSlide.components.map((component) => (
               <div key={component.id}>
-                {renderComponent(component, refreshTrigger)}
+                {renderComponent(component, refreshTrigger, (componentId, data) => {
+                  setComponentLoadedData(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(componentId, data);
+                    return newMap;
+                  });
+                })}
               </div>
             ))}
           </div>
@@ -1085,7 +1146,14 @@ export default function PresentationPage() {
                         </button>
                       </div>
                       
-                      {renderComponent(component)}
+                      {renderComponent(component, refreshTrigger, (componentId, data) => {
+                        console.log(`📦 Dados carregados para componente ${componentId}:`, data.length, 'itens');
+                        setComponentLoadedData(prev => {
+                          const newMap = new Map(prev);
+                          newMap.set(componentId, data);
+                          return newMap;
+                        });
+                      })}
                     </div>
                   ))
                 )}

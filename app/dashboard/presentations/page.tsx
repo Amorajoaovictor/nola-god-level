@@ -486,13 +486,24 @@ export default function PresentationsPage() {
 
       case 'custom':
         // Slides criados no editor avançado
-        console.log('🎨 Renderizando slide custom:', {
-          slideId: slide.id,
-          hasData: !!slide.data,
-          isArray: Array.isArray(slide.data),
-          dataLength: Array.isArray(slide.data) ? slide.data.length : 0,
-          data: slide.data
-        });
+        console.group(`🎨 Renderizando slide custom: ${slide.id}`);
+        console.log('Slide completo:', slide);
+        console.log('Data type:', typeof slide.data);
+        console.log('Is Array:', Array.isArray(slide.data));
+        console.log('Data length:', Array.isArray(slide.data) ? slide.data.length : 0);
+        
+        if (Array.isArray(slide.data)) {
+          console.log('Componentes:');
+          slide.data.forEach((comp: any, idx: number) => {
+            console.log(`  [${idx}]`, {
+              type: comp.type,
+              id: comp.id,
+              content: comp.content,
+              styles: comp.styles
+            });
+          });
+        }
+        console.groupEnd();
         
         if (Array.isArray(slide.data)) {
           return (
