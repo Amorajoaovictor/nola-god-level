@@ -246,7 +246,7 @@ export default function StoresPage() {
             variant="ghost"
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Lojas</p>
             <p className="text-2xl font-bold text-slate-900">{stores.length}</p>
@@ -271,7 +271,7 @@ export default function StoresPage() {
         </div>
 
         {/* Stores Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {loading ? (
             <div className="col-span-full flex justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

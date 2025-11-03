@@ -335,7 +335,7 @@ export default function OrdersPage() {
             />
           )}
         </div>
-        <div className="grid md:grid-cols-5 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
+        <div className="grid md:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-8">
           <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">⏱️ Tempo Médio de Entrega</p>
             <p className="text-3xl font-bold text-blue-600">
@@ -373,7 +373,7 @@ export default function OrdersPage() {
         </div>
 
         {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
           {/* Tempo de Entrega por Loja */}
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
@@ -510,7 +510,7 @@ export default function OrdersPage() {
           </div>
           
           {productsByDay.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               {productsByDay.map((day) => (
                 <div key={day.dayOfWeek} className="border border-slate-200 rounded-lg p-4">
                   <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">

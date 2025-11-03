@@ -575,7 +575,7 @@ export default function SalesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 md:px-6 py-6 md:py-6 md:py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Stats Cards */}
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Resumo de Vendas</h2>
@@ -615,12 +615,12 @@ export default function SalesPage() {
             variant="ghost"
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
-          <div className="bg-white p-4 md:p-4 md:p-6 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Vendas</p>
             <p className="text-xl md:text-2xl font-bold text-slate-900">{(summary.totalSales || 0).toLocaleString("pt-BR")}</p>
           </div>
-          <div className="bg-white p-4 md:p-4 md:p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Faturamento</p>
             <p className="text-xl md:text-2xl font-bold text-slate-900">{formatCurrency(Number(summary.totalRevenue || 0))}</p>
           </div>
