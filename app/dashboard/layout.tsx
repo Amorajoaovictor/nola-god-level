@@ -1,8 +1,24 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Sidebar */}
@@ -31,6 +47,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </a>
 
             <a
+              href="/dashboard/orders"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+            >
+              <span>📦</span>
+              <span className="font-medium">Pedidos</span>
+            </a>
+
+            <a
               href="/dashboard/products"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
             >
@@ -56,7 +80,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             <div className="pt-4 mt-4 border-t border-slate-200">
               <a
-                href="/dashboard/presentation"
+                href="/dashboard/presentations"
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
               >
                 <span>🎬</span>
@@ -70,6 +94,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <span>📚</span>
                 <span className="font-medium">Documentação</span>
               </a>
+
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              >
+                <span>🚪</span>
+                <span className="font-medium">
+                  {isLoggingOut ? "Saindo..." : "Sair"}
+                </span>
+              </button>
             </div>
           </nav>
         </div>
