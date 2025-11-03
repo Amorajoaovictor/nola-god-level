@@ -1518,11 +1518,11 @@ export default function PresentationPage() {
                                   if (comp) {
                                     comp.apiConfig = {
                                       endpoint: preset.endpoint,
-                                      params: preset.params,
+                                      params: 'params' in preset ? preset.params : undefined,
                                       dataPath: preset.dataPath,
                                       transform: preset.transform,
-                                      xKey: preset.xKey,
-                                      yKey: preset.yKey,
+                                      xKey: 'xKey' in preset ? preset.xKey : undefined,
+                                      yKey: 'yKey' in preset ? preset.yKey : undefined,
                                     };
                                     comp.content = {
                                       ...comp.content,
