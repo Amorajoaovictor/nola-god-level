@@ -191,13 +191,31 @@ curl http://localhost:3000/api/stores/1/performance
 
 ### Documentação Completa Disponível:
 
+- **[Swagger UI - API Docs](http://localhost:3000/api-docs)** - 📊 Documentação interativa da API com Swagger UI (após rodar `npm run dev`)
+
+- **[OpenAPI Spec JSON](http://localhost:3000/api/docs)** - 🔗 Especificação OpenAPI 3.0 em formato JSON
+
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Detalhamento completo da arquitetura em camadas, fluxo de dados, padrões utilizados e exemplos práticos
 
 - **[API.md](./API.md)** - Documentação completa de todos os endpoints, parâmetros, exemplos de request/response e códigos de erro
 
 - **[SETUP.md](./SETUP.md)** - Guia passo a passo de instalação, configuração, troubleshooting e dicas de uso
 
-- **[http://localhost:3000](http://localhost:3000)** - Página inicial com documentação interativa (após rodar `npm run dev`)
+### 🎯 Acessar Documentação Swagger
+
+Após rodar o servidor (`npm run dev`), acesse:
+
+```
+http://localhost:3000/api-docs
+```
+
+**Features da documentação Swagger:**
+- ✅ Interface visual interativa para testar endpoints
+- ✅ Especificação OpenAPI 3.0 completa
+- ✅ Descrição detalhada de parâmetros e respostas
+- ✅ Exemplos de request/response
+- ✅ Schemas de dados documentados
+- ✅ Tags organizadas por módulo (Sales, Products, Stores, etc)
 
 ## 🔧 Tecnologias
 
@@ -312,13 +330,13 @@ export class ExemploRepository {
 
 ## 🎯 Próximos Passos Sugeridos
 
-1. ✅ Backend estruturado ← **VOCÊ ESTÁ AQUI**
-2. 🔲 Implementar autenticação (JWT/NextAuth)
-3. 🔲 Adicionar testes unitários e de integração
-4. 🔲 Implementar frontend (dashboard analytics)
-5. 🔲 Adicionar cache (Redis)
-6. 🔲 Implementar rate limiting
-7. 🔲 Documentação OpenAPI/Swagger
+1. ✅ Backend estruturado
+2. ✅ Documentação Swagger/OpenAPI ← **VOCÊ ESTÁ AQUI**
+3. 🔲 Implementar autenticação (JWT/NextAuth)
+4. 🔲 Adicionar testes unitários e de integração
+5. 🔲 Implementar frontend (dashboard analytics)
+6. 🔲 Adicionar cache (Redis)
+7. 🔲 Implementar rate limiting
 8. 🔲 CI/CD pipeline
 9. 🔲 Deploy em produção
 
@@ -344,7 +362,7 @@ Use o VS Code com breakpoints nos services/repositories.
 1. Leia [ARCHITECTURE.md](./ARCHITECTURE.md) para entender a estrutura
 2. Consulte [API.md](./API.md) para exemplos de uso
 3. Veja [SETUP.md](./SETUP.md) para troubleshooting
-4. Acesse `http://localhost:3000` para docs interativa
+4. Acesse `http://localhost:3000/api-docs` para docs interativa
 
 ---
 

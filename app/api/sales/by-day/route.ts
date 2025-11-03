@@ -4,8 +4,88 @@ import { successResponse } from '@/lib/utils/response.utils';
 import prisma from '@/lib/prisma/client';
 
 /**
- * GET /api/sales/by-day
- * Get sales grouped by day
+ * @swagger
+ * /api/sales/by-day:
+ *   get:
+ *     summary: Obter vendas agrupadas por dia
+ *     description: Retorna vendas agregadas por dia com filtros opcionais
+ *     tags: [Sales]
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           default: 30
+ *         description: Número de dias retroativos (padrão 30)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final (YYYY-MM-DD)
+ *       - in: query
+ *         name: storeId
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: integer
+ *         description: IDs das lojas (pode ser múltiplo)
+ *       - in: query
+ *         name: channelId
+ *         schema:
+ *           type: integer
+ *         description: ID do canal de venda
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Status da venda
+ *       - in: query
+ *         name: dayOfWeek
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           maximum: 6
+ *         description: Dia da semana (0=Domingo, 6=Sábado)
+ *     responses:
+ *       200:
+ *         description: Lista de vendas agrupadas por dia
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                         format: date
+ *                         example: "2025-11-01"
+ *                       totalSales:
+ *                         type: integer
+ *                         example: 150
+ *                       totalRevenue:
+ *                         type: number
+ *                         format: float
+ *                         example: 45000.50
+ *       500:
+ *         description: Erro interno do servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 export const GET = asyncHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
