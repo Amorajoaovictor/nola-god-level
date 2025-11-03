@@ -388,7 +388,7 @@ export default function DashboardPage() {
                 ? formatCurrency(Number(summary.totalRevenue)) 
                 : loading ? "..." : "R$ 0,00"}
             </p>
-            <p className="text-xs text-slate-500 mt-2">Total acumulado</p>
+            <p className="text-xs text-slate-500 mt-2">Vendas + taxas + fretes</p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -428,6 +428,36 @@ export default function DashboardPage() {
             <p className="text-xs text-slate-500 mt-2">No catálogo</p>
           </div>
         </div>
+
+        {/* Info Card - Diferença entre Faturamento e Receita de Produtos */}
+        {summary && topProducts.length > 0 && (() => {
+          const totalProductRevenue = topProducts.reduce((sum, item) => sum + (item.totalRevenue || 0), 0);
+          const difference = Number(summary.totalRevenue) - totalProductRevenue;
+          const percentageDiff = (difference / Number(summary.totalRevenue)) * 100;
+          
+          return difference > 0 ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💡</span>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-blue-900 mb-2">
+                    Diferença entre Faturamento Total e Receita de Produtos
+                  </h4>
+                  <p className="text-sm text-blue-800 mb-2">
+                    <strong>Faturamento Total:</strong> {formatCurrency(Number(summary.totalRevenue))} (inclui produtos + taxas + fretes + ajustes)
+                    <br />
+                    <strong>Receita de Produtos:</strong> {formatCurrency(totalProductRevenue)} (apenas valor dos produtos)
+                    <br />
+                    <strong>Diferença:</strong> <span className="font-bold text-blue-900">{formatCurrency(difference)}</span> ({percentageDiff.toFixed(2)}%)
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    Esta diferença representa taxas de entrega, serviços adicionais, ajustes de preço e outros valores não relacionados diretamente aos produtos.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null;
+        })()}
 
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -509,9 +539,14 @@ export default function DashboardPage() {
 
         {/* Top Products */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
-            Top 5 Produtos Mais Vendidos
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Top 5 Produtos Mais Vendidos
+            </h3>
+            <div className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+              💡 Receita apenas dos produtos (sem taxas)
+            </div>
+          </div>
           {topProducts.length > 0 ? (
             <div className="space-y-4">
               {topProducts.map((item, index) => (
