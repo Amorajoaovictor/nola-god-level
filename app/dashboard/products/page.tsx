@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import AddToSlideButton from "@/components/presentation/AddToSlideButton";
 
 const CACHE_KEY = "products_global_stats";
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos em ms
@@ -405,9 +406,33 @@ export default function ProductsPage() {
 
         {/* Products Grid */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-6">
-            Top {limit} Produtos Mais Vendidos
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Top {limit} Produtos Mais Vendidos
+            </h2>
+            <AddToSlideButton
+              title={`Top ${topProducts.length} Produtos Mais Vendidos`}
+              type="table"
+              data={topProducts.map((item, index) => ({
+                posicao: index + 1,
+                produto: item.product?.name || "N/A",
+                categoria: item.product?.category?.name || "N/A",
+                quantidade: item.totalQuantity?.toLocaleString('pt-BR') || '0',
+                receita: `R$ ${(item.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                precoMedio: `R$ ${(item.totalRevenue && item.totalQuantity ? (item.totalRevenue / item.totalQuantity) : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              }))}
+              config={{
+                columns: [
+                  { key: 'posicao', label: '#' },
+                  { key: 'produto', label: 'Produto' },
+                  { key: 'categoria', label: 'Categoria' },
+                  { key: 'quantidade', label: 'Quantidade' },
+                  { key: 'receita', label: 'Receita Total' },
+                  { key: 'precoMedio', label: 'Preço Médio' },
+                ]
+              }}
+            />
+          </div>
 
           {loading ? (
             <div className="flex justify-center py-12">
