@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AddToSlideButton from "@/components/presentation/AddToSlideButton";
 
 export default function StoresPage() {
   const [stores, setStores] = useState<any[]>([]);
@@ -211,6 +212,40 @@ export default function StoresPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* Stats Cards */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Estatísticas das Lojas</h2>
+          <AddToSlideButton
+            title="Estatísticas das Lojas"
+            type="metrics"
+            data={[
+              {
+                label: 'Total de Lojas',
+                value: stores.length,
+                format: 'number',
+                color: 'slate'
+              },
+              {
+                label: 'Lojas Ativas',
+                value: activeStores,
+                format: 'number',
+                color: 'green'
+              },
+              {
+                label: 'Lojas Próprias',
+                value: ownStores,
+                format: 'number',
+                color: 'blue'
+              },
+              {
+                label: 'Franquias',
+                value: stores.length - ownStores,
+                format: 'number',
+                color: 'purple'
+              }
+            ]}
+            variant="ghost"
+          />
+        </div>
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Lojas</p>
@@ -545,17 +580,39 @@ export default function StoresPage() {
                   <h2 className="text-xl font-bold text-slate-900">
                     Comparação de Lojas
                   </h2>
-                  <button
-                    onClick={() => {
-                      setShowComparison(false);
-                      setComparisonData([]);
-                    }}
-                    className="text-slate-400 hover:text-slate-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <AddToSlideButton
+                      title={`Comparação de Lojas (${comparisonData.length} lojas)`}
+                      type="metrics"
+                      data={comparisonData.map(({ store, performance }) => ({
+                        loja: store.name,
+                        cidade: `${store.city} - ${store.state}`,
+                        receita: performance.totalRevenue || 0,
+                        vendas: performance.totalSales || 0,
+                        ticketMedio: performance.averageTicket || 0,
+                        taxaConclusao: performance.totalSales > 0
+                          ? ((performance.completedSales / performance.totalSales) * 100).toFixed(1)
+                          : 0,
+                        canceladas: performance.cancelledSales || 0
+                      }))}
+                      config={{
+                        type: 'comparison',
+                        stores: comparisonData.map(({ store }) => store.name)
+                      }}
+                      variant="primary"
+                    />
+                    <button
+                      onClick={() => {
+                        setShowComparison(false);
+                        setComparisonData([]);
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 

@@ -617,8 +617,38 @@ export default function PresentationPage() {
   const [showComponentPicker, setShowComponentPicker] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
 
   const currentSlide = slides[currentSlideIndex];
+
+  // Carregar slide em edição do sessionStorage
+  useEffect(() => {
+    const editingSlideData = sessionStorage.getItem('editingSlide');
+    if (editingSlideData) {
+      try {
+        const slideData = JSON.parse(editingSlideData);
+        
+        // Converter o slide do formato de apresentação para o formato do editor
+        if (slideData.type === 'custom' && Array.isArray(slideData.data)) {
+          const convertedSlide: Slide = {
+            id: slideData.id,
+            title: slideData.title,
+            components: slideData.data, // Os componentes já estão no formato correto
+            background: slideData.config?.background || "#ffffff",
+          };
+          
+          setSlides([convertedSlide]);
+          setCurrentSlideIndex(0);
+          setEditingSlideId(slideData.id);
+          
+          // Limpar o sessionStorage
+          sessionStorage.removeItem('editingSlide');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar slide para edição:', error);
+      }
+    }
+  }, []);
 
   // Salvar slide atual na apresentação
   const saveCurrentSlideToPresentation = () => {
@@ -630,25 +660,45 @@ export default function PresentationPage() {
     setSaveStatus('saving');
     
     try {
-      // Converter o slide do editor para o formato do PresentationStore
-      // Por enquanto vamos salvar como tipo 'custom' com o conteúdo completo
-      PresentationStore.addSlide({
-        id: Date.now().toString(),
+      const slideData = {
         title: currentSlide.title || 'Slide Customizado',
-        type: 'custom',
         data: currentSlide.components,
         config: {
           background: currentSlide.background,
         },
-        createdAt: Date.now(),
+      };
+      
+      console.log('💾 Salvando slide:', {
+        editingSlideId,
+        slideData,
+        componentsCount: currentSlide.components.length
       });
+      
+      if (editingSlideId) {
+        // Atualizar slide existente
+        PresentationStore.updateSlide(editingSlideId, slideData);
+        
+        // Limpar estado de edição após atualizar
+        setEditingSlideId(null);
+        
+        console.log('✅ Slide atualizado com sucesso');
+        alert('✅ Slide atualizado na apresentação com sucesso!');
+      } else {
+        // Criar novo slide
+        PresentationStore.addSlide({
+          title: slideData.title,
+          type: 'custom',
+          data: slideData.data,
+          config: slideData.config,
+        });
+        console.log('✅ Novo slide criado com sucesso');
+        alert('✅ Slide salvo na apresentação com sucesso!');
+      }
 
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-      
-      alert('✅ Slide salvo na apresentação com sucesso!');
     } catch (error) {
-      console.error('Erro ao salvar slide:', error);
+      console.error('❌ Erro ao salvar slide:', error);
       alert('❌ Erro ao salvar slide. Tente novamente.');
       setSaveStatus('idle');
     }
@@ -861,8 +911,20 @@ export default function PresentationPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Editor de Apresentação</h1>
-              <p className="text-sm text-slate-600">Crie apresentações personalizadas com seus dados</p>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Editor de Apresentação
+                {editingSlideId && (
+                  <span className="ml-3 text-sm font-normal text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    ✏️ Editando
+                  </span>
+                )}
+              </h1>
+              <p className="text-sm text-slate-600">
+                {editingSlideId 
+                  ? 'Editando slide salvo - clique em salvar para atualizar'
+                  : 'Crie apresentações personalizadas com seus dados'
+                }
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <button
@@ -887,7 +949,7 @@ export default function PresentationPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                     </svg>
-                    Salvar na Apresentação
+                    {editingSlideId ? 'Atualizar Slide' : 'Salvar na Apresentação'}
                   </>
                 )}
               </button>

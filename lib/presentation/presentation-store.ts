@@ -96,6 +96,35 @@ export class PresentationStore {
     this.update(current);
   }
 
+  // Atualizar slide existente
+  static updateSlide(slideId: string, updates: Partial<Omit<Slide, 'id' | 'order' | 'createdAt'>>): void {
+    const current = this.getCurrent();
+    if (!current) return;
+
+    const slideIndex = current.slides.findIndex(s => s.id === slideId);
+    if (slideIndex === -1) {
+      console.error('❌ Slide não encontrado:', slideId);
+      return;
+    }
+
+    console.log('📝 Atualizando slide:', {
+      slideId,
+      slideIndex,
+      oldSlide: current.slides[slideIndex],
+      updates
+    });
+
+    current.slides[slideIndex] = {
+      ...current.slides[slideIndex],
+      ...updates,
+    };
+    current.updatedAt = new Date().toISOString();
+    
+    console.log('✅ Slide atualizado:', current.slides[slideIndex]);
+    
+    this.update(current);
+  }
+
   // Reordenar slides
   static reorderSlides(slideIds: string[]): void {
     const current = this.getCurrent();

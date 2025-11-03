@@ -13,6 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import AddToSlideButton from "@/components/presentation/AddToSlideButton";
 
 // Componente Heatmap
 function HeatmapChart({ data, selectedDays }: { data: any[]; selectedDays?: number[] }) {
@@ -576,6 +577,44 @@ export default function SalesPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* Stats Cards */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Resumo de Vendas</h2>
+          <AddToSlideButton
+            title="Resumo de Vendas"
+            type="metrics"
+            data={[
+              {
+                label: 'Total de Vendas',
+                value: summary.totalSales || 0,
+                format: 'number',
+                icon: '🛒',
+                color: 'slate'
+              },
+              {
+                label: 'Faturamento',
+                value: Number(summary.totalRevenue || 0),
+                format: 'currency',
+                icon: '💰',
+                color: 'blue'
+              },
+              {
+                label: 'Vendas Completas',
+                value: summary.completedSales || 0,
+                format: 'number',
+                icon: '✅',
+                color: 'green'
+              },
+              {
+                label: 'Vendas Canceladas',
+                value: summary.cancelledSales || 0,
+                format: 'number',
+                icon: '❌',
+                color: 'red'
+              }
+            ]}
+            variant="ghost"
+          />
+        </div>
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Vendas</p>
@@ -602,12 +641,50 @@ export default function SalesPage() {
         {/* Month Comparison Chart */}
         {comparison && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Comparação: Mês Atual vs Mês Anterior
-            </h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Comparando {new Date(comparison.currentMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')} com {new Date(comparison.lastMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Comparação: Mês Atual vs Mês Anterior
+                </h3>
+                <p className="text-sm text-slate-600 mt-1">
+                  Comparando {new Date(comparison.currentMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')} com {new Date(comparison.lastMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}
+                </p>
+              </div>
+              <AddToSlideButton
+                title="Comparação Mensal de Vendas"
+                type="metrics"
+                data={[
+                  {
+                    label: 'Faturamento Atual',
+                    value: Number(comparison.currentMonth.totalRevenue),
+                    format: 'currency',
+                    color: 'green',
+                    change: comparison.changes.revenue
+                  },
+                  {
+                    label: 'Total de Vendas Atual',
+                    value: Number(comparison.currentMonth.totalSales),
+                    format: 'number',
+                    color: 'blue',
+                    change: comparison.changes.sales
+                  },
+                  {
+                    label: 'Ticket Médio Atual',
+                    value: Number(comparison.currentMonth.averageTicket),
+                    format: 'currency',
+                    color: 'purple',
+                    change: comparison.changes.averageTicket
+                  }
+                ]}
+                config={{
+                  comparison: {
+                    current: new Date(comparison.currentMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }),
+                    previous: new Date(comparison.lastMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' })
+                  }
+                }}
+                variant="ghost"
+              />
+            </div>
             
             <div className="grid md:grid-cols-3 gap-6">
               {/* Faturamento Comparison */}
@@ -699,9 +776,27 @@ export default function SalesPage() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Sales Trend Line Chart */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                Evolução de Vendas {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Evolução de Vendas {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
+                </h3>
+                {salesByDay.length > 0 && (
+                  <AddToSlideButton
+                    title="Evolução de Vendas"
+                    type="chart"
+                    data={salesByDay}
+                    config={{
+                      chartType: 'lineChart',
+                      dataKey: 'totalSales',
+                      xAxisKey: 'date',
+                      yAxisLabel: 'Quantidade de Vendas',
+                      color: '#3b82f6',
+                      description: startDate || endDate ? "Período Filtrado" : "Últimos 30 Dias"
+                    }}
+                    variant="ghost"
+                  />
+                )}
+              </div>
             {salesByDay.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={salesByDay}>
@@ -744,9 +839,27 @@ export default function SalesPage() {
 
           {/* Revenue Area Chart */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Faturamento Diário {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Faturamento Diário {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
+              </h3>
+              {salesByDay.length > 0 && (
+                <AddToSlideButton
+                  title="Faturamento Diário"
+                  type="chart"
+                  data={salesByDay}
+                  config={{
+                    chartType: 'areaChart',
+                    dataKey: 'totalRevenue',
+                    xAxisKey: 'date',
+                    yAxisLabel: 'Faturamento (R$)',
+                    color: '#10b981',
+                    description: startDate || endDate ? "Período Filtrado" : "Últimos 30 Dias"
+                  }}
+                  variant="ghost"
+                />
+              )}
+            </div>
             {salesByDay.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={salesByDay}>
@@ -806,23 +919,48 @@ export default function SalesPage() {
         {/* Heatmap - Sales by Day of Week and Hour */}
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">
-                Mapa de Calor - Vendas por Dia da Semana e Hora
-              </h3>
-              <p className="text-sm text-slate-600 mt-1">
-                {startDate && endDate 
-                  ? `Período: ${new Date(startDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')} a ${new Date(endDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
-                  : startDate 
-                  ? `A partir de ${new Date(startDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
-                  : endDate
-                  ? `Até ${new Date(endDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
-                  : 'Últimos 30 dias'
-                }
-                {heatmapData.length > 0 && (
-                  <span className="ml-2">• {heatmapData.length} horários com vendas</span>
-                )}
-              </p>
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Mapa de Calor - Vendas por Dia da Semana e Hora
+                </h3>
+                <p className="text-sm text-slate-600 mt-1">
+                  {startDate && endDate 
+                    ? `Período: ${new Date(startDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')} a ${new Date(endDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
+                    : startDate 
+                    ? `A partir de ${new Date(startDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
+                    : endDate
+                    ? `Até ${new Date(endDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
+                    : 'Últimos 30 dias'
+                  }
+                  {heatmapData.length > 0 && (
+                    <span className="ml-2">• {heatmapData.length} horários com vendas</span>
+                  )}
+                </p>
+              </div>
+              {heatmapData.length > 0 && (
+                <AddToSlideButton
+                  title="Mapa de Calor - Vendas por Dia e Hora"
+                  type="custom"
+                  data={{
+                    type: 'heatmap',
+                    heatmapData: heatmapData,
+                    selectedDays: selectedDays,
+                    period: startDate && endDate 
+                      ? `${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')}`
+                      : startDate 
+                      ? `A partir de ${new Date(startDate).toLocaleDateString('pt-BR')}`
+                      : endDate
+                      ? `Até ${new Date(endDate).toLocaleDateString('pt-BR')}`
+                      : 'Últimos 30 dias'
+                  }}
+                  config={{
+                    chartType: 'heatmap',
+                    description: `${heatmapData.length} horários com vendas registradas`
+                  }}
+                  variant="ghost"
+                />
+              )}
             </div>
             {heatmapData.length > 0 ? (
               <div className="overflow-x-auto">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PresentationStore, Presentation, Slide } from "@/lib/presentation/presentation-store";
+import EditSlideModal from "@/components/presentation/EditSlideModal";
 import { 
   BarChart, 
   Bar, 
@@ -192,9 +193,30 @@ export default function PresentationsPage() {
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [viewMode, setViewMode] = useState<'edit' | 'present'>('edit');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
 
   useEffect(() => {
     loadData();
+    
+    // Listener para mudanças no localStorage (quando edita em outra aba)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'nola-presentations' || e.key === 'nola-current-presentation') {
+        loadData();
+      }
+    };
+    
+    // Listener para quando a aba recebe foco (volta de outra aba)
+    const handleFocus = () => {
+      loadData();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const loadData = () => {
@@ -207,6 +229,25 @@ export default function PresentationsPage() {
   const handleDeleteSlide = (slideId: string) => {
     if (confirm('Remover este slide da apresentação?')) {
       PresentationStore.removeSlide(slideId);
+      loadData();
+    }
+  };
+
+  const handleEditSlide = (slide: Slide) => {
+    // Para slides customizados, abrir no editor avançado
+    if (slide.type === 'custom') {
+      sessionStorage.setItem('editingSlide', JSON.stringify(slide));
+      window.open('/dashboard/presentation', '_blank');
+    } else {
+      // Para outros tipos, abrir modal de edição rápida
+      setEditingSlide(slide);
+    }
+  };
+
+  const handleSaveSlideEdits = (updates: Partial<Slide>) => {
+    if (editingSlide) {
+      PresentationStore.updateSlide(editingSlide.id, updates);
+      setEditingSlide(null);
       loadData();
     }
   };
@@ -242,14 +283,40 @@ export default function PresentationsPage() {
   };
 
   const renderSlideContent = (slide: Slide) => {
+    const config = slide.config || {};
+    
     switch (slide.type) {
       case 'metrics':
+        const columns = config.columns === 'auto' || !config.columns 
+          ? Math.min(slide.data.length, 4) 
+          : parseInt(config.columns);
+        const showIcons = config.showIcons !== false;
+        
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div 
+            className={`grid gap-4`}
+            style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+          >
             {slide.data.map((metric: any, idx: number) => (
               <div key={idx} className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                {showIcons && metric.icon && (
+                  <span className="text-2xl mb-2 block">{metric.icon}</span>
+                )}
                 <p className="text-sm font-medium text-slate-600 mb-2">{metric.label}</p>
-                <p className="text-3xl font-bold text-blue-600">{metric.value}</p>
+                <p className={`text-3xl font-bold ${
+                  metric.color === 'green' ? 'text-green-600' :
+                  metric.color === 'blue' ? 'text-blue-600' :
+                  metric.color === 'purple' ? 'text-purple-600' :
+                  metric.color === 'orange' ? 'text-orange-600' :
+                  metric.color === 'red' ? 'text-red-600' :
+                  'text-slate-900'
+                }`}>
+                  {metric.format === 'currency' && typeof metric.value === 'number'
+                    ? `R$ ${metric.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : metric.format === 'number' && typeof metric.value === 'number'
+                    ? metric.value.toLocaleString('pt-BR')
+                    : metric.value}
+                </p>
                 {metric.subtitle && (
                   <p className="text-xs text-slate-500 mt-1">{metric.subtitle}</p>
                 )}
@@ -259,42 +326,109 @@ export default function PresentationsPage() {
         );
 
       case 'chart':
-        if (slide.config.chartType === 'bar') {
+        const chartType = config.chartType || 'barChart';
+        const showLegend = config.showLegend !== false;
+        const showGrid = config.showGrid !== false;
+        const chartColor = config.color || '#3b82f6';
+        
+        if (chartType === 'barChart') {
           return (
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={slide.data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={slide.config.xKey || 'name'} />
-                  <YAxis />
+                  {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+                  <XAxis 
+                    dataKey={config.xAxisKey || slide.config.xKey || 'name'}
+                    label={config.xAxisLabel ? { value: config.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined}
+                  />
+                  <YAxis 
+                    label={config.yAxisLabel ? { value: config.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+                  />
                   <Tooltip />
-                  <Legend />
-                  <Bar dataKey={slide.config.yKey || 'value'} fill="#3B82F6" />
+                  {showLegend && <Legend />}
+                  <Bar 
+                    dataKey={config.dataKey || slide.config.yKey || 'value'} 
+                    fill={chartColor}
+                    name={config.yAxisLabel || 'Valor'}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           );
-        } else if (slide.config.chartType === 'pie') {
-          const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+        } else if (chartType === 'lineChart') {
+          return (
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={slide.data}>
+                  {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+                  <XAxis 
+                    dataKey={config.xAxisKey || 'name'}
+                    label={config.xAxisLabel ? { value: config.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined}
+                  />
+                  <YAxis 
+                    label={config.yAxisLabel ? { value: config.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+                  />
+                  <Tooltip />
+                  {showLegend && <Legend />}
+                  <Line 
+                    type="monotone" 
+                    dataKey={config.dataKey || 'value'} 
+                    stroke={chartColor}
+                    strokeWidth={2}
+                    name={config.yAxisLabel || 'Valor'}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        } else if (chartType === 'areaChart') {
+          return (
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <ResponsiveContainer width="100%" height={400}>
+                <AreaChart data={slide.data}>
+                  {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+                  <XAxis 
+                    dataKey={config.xAxisKey || 'name'}
+                    label={config.xAxisLabel ? { value: config.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined}
+                  />
+                  <YAxis 
+                    label={config.yAxisLabel ? { value: config.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+                  />
+                  <Tooltip />
+                  {showLegend && <Legend />}
+                  <Area 
+                    type="monotone" 
+                    dataKey={config.dataKey || 'value'} 
+                    stroke={chartColor}
+                    fill={chartColor}
+                    fillOpacity={0.6}
+                    name={config.yAxisLabel || 'Valor'}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        } else if (chartType === 'pieChart') {
+          const pieColors = config.colors || COLORS;
           return (
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
                   <Pie
                     data={slide.data}
-                    dataKey={slide.config.valueKey || 'value'}
-                    nameKey={slide.config.nameKey || 'name'}
+                    dataKey={config.dataKey || slide.config.valueKey || 'value'}
+                    nameKey={config.nameKey || slide.config.nameKey || 'name'}
                     cx="50%"
                     cy="50%"
                     outerRadius={120}
                     label
                   >
                     {slide.data.map((_: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
+                  {showLegend && <Legend />}
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -303,23 +437,43 @@ export default function PresentationsPage() {
         break;
 
       case 'table':
+        const showHeader = config.showHeader !== false;
+        const striped = config.striped === true;
+        const compact = config.compact === true;
+        const fontSize = config.fontSize || 'medium';
+        
         return (
           <div className="bg-white p-6 rounded-lg shadow-sm overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  {slide.config.columns?.map((col: any, idx: number) => (
-                    <th key={idx} className="text-left py-3 px-4 font-semibold text-slate-700">
-                      {col.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+            <table className={`w-full ${
+              fontSize === 'small' ? 'text-sm' : 
+              fontSize === 'large' ? 'text-lg' : 
+              'text-base'
+            }`}>
+              {showHeader && (
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    {slide.config.columns?.map((col: any, idx: number) => (
+                      <th key={idx} className={`text-left font-semibold text-slate-700 ${
+                        compact ? 'py-2 px-3' : 'py-3 px-4'
+                      }`}>
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              )}
               <tbody>
                 {slide.data.map((row: any, rowIdx: number) => (
-                  <tr key={rowIdx} className="border-b border-slate-100">
+                  <tr 
+                    key={rowIdx} 
+                    className={`border-b border-slate-100 ${
+                      striped && rowIdx % 2 === 1 ? 'bg-slate-50' : ''
+                    }`}
+                  >
                     {slide.config.columns?.map((col: any, colIdx: number) => (
-                      <td key={colIdx} className="py-3 px-4 text-slate-600">
+                      <td key={colIdx} className={`text-slate-600 ${
+                        compact ? 'py-2 px-3' : 'py-3 px-4'
+                      }`}>
                         {row[col.key]}
                       </td>
                     ))}
@@ -332,6 +486,14 @@ export default function PresentationsPage() {
 
       case 'custom':
         // Slides criados no editor avançado
+        console.log('🎨 Renderizando slide custom:', {
+          slideId: slide.id,
+          hasData: !!slide.data,
+          isArray: Array.isArray(slide.data),
+          dataLength: Array.isArray(slide.data) ? slide.data.length : 0,
+          data: slide.data
+        });
+        
         if (Array.isArray(slide.data)) {
           return (
             <div className="space-y-6">
@@ -549,12 +711,20 @@ export default function PresentationsPage() {
                       {slide.type} • {new Date(slide.createdAt).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleDeleteSlide(slide.id)}
-                    className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    🗑️ Remover
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditSlide(slide)}
+                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSlide(slide.id)}
+                      className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      🗑️ Remover
+                    </button>
+                  </div>
                 </div>
                 <div className="border-t border-slate-200 pt-4">
                   {renderSlideContent(slide)}
@@ -562,6 +732,15 @@ export default function PresentationsPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Modal de Edição */}
+        {editingSlide && (
+          <EditSlideModal
+            slide={editingSlide}
+            onSave={handleSaveSlideEdits}
+            onClose={() => setEditingSlide(null)}
+          />
         )}
       </div>
     </div>

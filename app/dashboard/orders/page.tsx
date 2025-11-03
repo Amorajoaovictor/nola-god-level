@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import AddToSlideButton from "@/components/presentation/AddToSlideButton";
 
 interface DeliveryStats {
   avgDeliveryTime: number;
@@ -287,6 +288,53 @@ export default function OrdersPage() {
         </div>
 
         {/* Cards de Métricas */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Estatísticas de Entrega</h2>
+          {deliveryStats && (
+            <AddToSlideButton
+              title="Estatísticas de Entrega e Pedidos"
+              type="metrics"
+              data={[
+                {
+                  label: 'Tempo Médio de Entrega',
+                  value: formatTime(deliveryStats.avgDeliveryTime),
+                  format: 'text',
+                  icon: '⏱️',
+                  color: 'blue'
+                },
+                {
+                  label: 'Tempo Médio de Preparo',
+                  value: formatTime(deliveryStats.avgPreparationTime),
+                  format: 'text',
+                  icon: '👨‍🍳',
+                  color: 'purple'
+                },
+                {
+                  label: 'Entrega Mais Rápida',
+                  value: formatTime(deliveryStats.minDeliveryTime),
+                  format: 'text',
+                  icon: '🚀',
+                  color: 'green'
+                },
+                {
+                  label: 'Entrega Mais Lenta',
+                  value: formatTime(deliveryStats.maxDeliveryTime),
+                  format: 'text',
+                  icon: '🐌',
+                  color: 'orange'
+                },
+                {
+                  label: 'Total de Pedidos',
+                  value: deliveryStats.totalOrders,
+                  format: 'number',
+                  icon: '📦',
+                  color: 'slate'
+                }
+              ]}
+              variant="ghost"
+            />
+          )}
+        </div>
         <div className="grid md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">⏱️ Tempo Médio de Entrega</p>
@@ -328,9 +376,29 @@ export default function OrdersPage() {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Tempo de Entrega por Loja */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              ⏱️ Tempo Médio de Entrega por Loja
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                ⏱️ Tempo de Entrega e Preparo por Loja
+              </h3>
+              {deliveryStats && deliveryStats.storeStats.length > 0 && (
+                <AddToSlideButton
+                  title="Tempo de Entrega e Preparo por Loja"
+                  type="chart"
+                  data={deliveryStats.storeStats}
+                  config={{
+                    chartType: 'barChart',
+                    dataKey: 'avgDeliveryTime',
+                    secondaryDataKey: 'avgPreparationTime',
+                    xAxisKey: 'storeName',
+                    yAxisLabel: 'Minutos',
+                    color: '#3B82F6',
+                    secondaryColor: '#8B5CF6',
+                    description: 'Comparativo de tempos médios entre lojas'
+                  }}
+                  variant="ghost"
+                />
+              )}
+            </div>
             {deliveryStats && deliveryStats.storeStats.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={deliveryStats.storeStats}>
@@ -360,9 +428,26 @@ export default function OrdersPage() {
 
           {/* Pedidos por Loja */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              📊 Distribuição de Pedidos por Loja
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                📊 Distribuição de Pedidos por Loja
+              </h3>
+              {deliveryStats && deliveryStats.storeStats.length > 0 && (
+                <AddToSlideButton
+                  title="Distribuição de Pedidos por Loja"
+                  type="chart"
+                  data={deliveryStats.storeStats}
+                  config={{
+                    chartType: 'pieChart',
+                    dataKey: 'count',
+                    nameKey: 'storeName',
+                    colors: COLORS,
+                    description: 'Percentual de pedidos por loja'
+                  }}
+                  variant="ghost"
+                />
+              )}
+            </div>
             {deliveryStats && deliveryStats.storeStats.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -390,9 +475,39 @@ export default function OrdersPage() {
 
         {/* Produtos Populares por Dia */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
-            🍔 Produtos Mais Populares por Dia da Semana
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">
+              🍔 Produtos Mais Populares por Dia da Semana
+            </h3>
+            {productsByDay.length > 0 && (
+              <AddToSlideButton
+                title="Produtos Mais Populares por Dia da Semana"
+                type="table"
+                data={productsByDay.flatMap(day => 
+                  day.products.slice(0, 3).map((product, index) => ({
+                    dia: day.dayName,
+                    posicao: index + 1,
+                    produto: product.productName,
+                    categoria: product.category,
+                    quantidade: product.quantity,
+                    receita: product.revenue
+                  }))
+                )}
+                config={{
+                  columns: [
+                    { key: 'dia', label: 'Dia da Semana', width: '20%' },
+                    { key: 'posicao', label: '#', width: '10%' },
+                    { key: 'produto', label: 'Produto', width: '30%' },
+                    { key: 'categoria', label: 'Categoria', width: '20%' },
+                    { key: 'quantidade', label: 'Qtd', width: '10%', format: 'number' },
+                    { key: 'receita', label: 'Receita', width: '10%', format: 'currency' }
+                  ],
+                  description: 'Top 3 produtos mais vendidos por dia da semana'
+                }}
+                variant="ghost"
+              />
+            )}
+          </div>
           
           {productsByDay.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

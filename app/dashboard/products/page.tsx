@@ -331,6 +331,45 @@ export default function ProductsPage() {
 
         {/* Stats Cards */}
         <div className="space-y-6 mb-8">
+          {/* Header com botão para adicionar ao slide */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Métricas dos Produtos</h2>
+            <AddToSlideButton
+              title="Métricas Globais de Produtos"
+              type="metrics"
+              data={[
+                {
+                  label: 'Total de Produtos',
+                  value: totalProducts,
+                  format: 'number',
+                  color: 'slate',
+                  subtitle: (storeId || startDate || endDate) 
+                    ? "Produtos vendidos no filtro"
+                    : "Cadastrados no sistema"
+                },
+                {
+                  label: `Receita Total ${(storeId || startDate || endDate) ? "(Filtrada)" : ""}`,
+                  value: globalStats.totalRevenue || 0,
+                  format: 'currency',
+                  color: 'green',
+                  subtitle: (storeId || startDate || endDate) 
+                    ? "Produtos no período/loja selecionada"
+                    : "Todos os produtos vendidos"
+                },
+                {
+                  label: `Quantidade Total ${(storeId || startDate || endDate) ? "(Filtrada)" : ""}`,
+                  value: globalStats.totalQuantity || 0,
+                  format: 'number',
+                  color: 'blue',
+                  subtitle: (storeId || startDate || endDate) 
+                    ? "Unidades no período/loja selecionada"
+                    : "Unidades vendidas (total)"
+                }
+              ]}
+              variant="ghost"
+            />
+          </div>
+          
           {/* Linha 1 - Métricas Globais */}
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-lg shadow-sm">

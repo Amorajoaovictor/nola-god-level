@@ -14,6 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import AddToSlideButton from "@/components/presentation/AddToSlideButton";
 
 const CACHE_KEY = "dashboard_summary";
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos em ms
@@ -377,6 +378,44 @@ export default function DashboardPage() {
       <main className="container mx-auto px-6 py-8">
 
         {/* KPI Cards */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Métricas Principais</h2>
+          <AddToSlideButton
+            title="Métricas Principais do Dashboard"
+            type="metrics"
+            data={[
+              {
+                label: 'Faturamento Total',
+                value: summary?.totalRevenue || 0,
+                format: 'currency',
+                icon: '📈',
+                color: 'green'
+              },
+              {
+                label: 'Total de Vendas',
+                value: summary?.totalSales || 0,
+                format: 'number',
+                icon: '🛒',
+                color: 'blue'
+              },
+              {
+                label: 'Ticket Médio',
+                value: summary?.averageTicket || 0,
+                format: 'currency',
+                icon: '💰',
+                color: 'purple'
+              },
+              {
+                label: 'Produtos Ativos',
+                value: totalProducts,
+                format: 'number',
+                icon: '📦',
+                color: 'orange'
+              }
+            ]}
+            variant="ghost"
+          />
+        </div>
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center justify-between mb-2">
@@ -463,9 +502,24 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Top Products Bar Chart */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Top 5 Produtos - Quantidade Vendida
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Top 5 Produtos - Quantidade Vendida
+              </h3>
+              <AddToSlideButton
+                title="Top 5 Produtos - Quantidade"
+                type="chart"
+                data={topProducts}
+                config={{
+                  chartType: 'barChart',
+                  dataKey: 'totalQuantity',
+                  xAxisKey: 'product.name',
+                  yAxisLabel: 'Quantidade',
+                  color: '#3b82f6'
+                }}
+                variant="ghost"
+              />
+            </div>
             {topProducts.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={topProducts}>
@@ -500,9 +554,23 @@ export default function DashboardPage() {
 
           {/* Revenue Pie Chart */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Distribuição de Receita - Top 5
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Distribuição de Receita - Top 5
+              </h3>
+              <AddToSlideButton
+                title="Distribuição de Receita - Top 5"
+                type="chart"
+                data={topProducts}
+                config={{
+                  chartType: 'pieChart',
+                  dataKey: 'totalRevenue',
+                  nameKey: 'product.name',
+                  colors: COLORS
+                }}
+                variant="ghost"
+              />
+            </div>
             {topProducts.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -540,12 +608,35 @@ export default function DashboardPage() {
         {/* Top Products */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Top 5 Produtos Mais Vendidos
-            </h3>
-            <div className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-              💡 Receita apenas dos produtos (sem taxas)
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Top 5 Produtos Mais Vendidos
+              </h3>
+              <div className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                💡 Receita apenas dos produtos (sem taxas)
+              </div>
             </div>
+            <AddToSlideButton
+              title="Top 5 Produtos Mais Vendidos"
+              type="table"
+              data={topProducts.map((item, index) => ({
+                ranking: index + 1,
+                produto: item.product?.name || "Produto",
+                categoria: item.product?.category?.name || "Sem categoria",
+                quantidade: item.totalQuantity || 0,
+                receita: item.totalRevenue || 0
+              }))}
+              config={{
+                columns: [
+                  { key: 'ranking', label: '#', width: '10%' },
+                  { key: 'produto', label: 'Produto', width: '30%' },
+                  { key: 'categoria', label: 'Categoria', width: '25%' },
+                  { key: 'quantidade', label: 'Quantidade', width: '15%', format: 'number' },
+                  { key: 'receita', label: 'Receita', width: '20%', format: 'currency' }
+                ]
+              }}
+              variant="ghost"
+            />
           </div>
           {topProducts.length > 0 ? (
             <div className="space-y-4">
