@@ -108,6 +108,7 @@ export default function SalesPage() {
   const [summary, setSummary] = useState<any>({});
   const [salesByDay, setSalesByDay] = useState<any[]>([]);
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
+  const [comparison, setComparison] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -119,8 +120,55 @@ export default function SalesPage() {
   const [channelId, setChannelId] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [selectedMonthYear, setSelectedMonthYear] = useState<string>(""); // Mês/Ano selecionado
   const [status, setStatus] = useState<string>("");
   const [selectedDays, setSelectedDays] = useState<number[]>([]); // Array de dias selecionados
+  
+  // Gerar opções de mês/ano para os últimos 3 anos
+  const generateMonthYearOptions = () => {
+    const options: { value: string; label: string }[] = [];
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    const months = [
+      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+    
+    // Gerar últimos 36 meses (3 anos)
+    for (let i = 0; i < 36; i++) {
+      const date = new Date(currentYear, currentMonth - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthStr = String(month + 1).padStart(2, '0');
+      
+      options.push({
+        value: `${year}-${monthStr}`,
+        label: `${months[month]}/${year}`
+      });
+    }
+    
+    return options;
+  };
+  
+  const monthYearOptions = generateMonthYearOptions();
+  
+  // Atualizar startDate e endDate quando selectedMonthYear muda
+  useEffect(() => {
+    if (selectedMonthYear) {
+      const [year, month] = selectedMonthYear.split('-');
+      const firstDay = `${year}-${month}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      const lastDayStr = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      
+      setStartDate(firstDay);
+      setEndDate(lastDayStr);
+    } else {
+      setStartDate("");
+      setEndDate("");
+    }
+  }, [selectedMonthYear]);
   
   // Store searchbox
   const [storeSearchOpen, setStoreSearchOpen] = useState(false);
@@ -172,6 +220,8 @@ export default function SalesPage() {
         // Adicionar cada dia selecionado como parâmetro separado
         selectedDays.forEach(day => params.append("daysOfWeek", day.toString()));
 
+        console.log("Fetching sales with params:", params.toString());
+
         // Params para heatmap (COM os dias selecionados para filtrar o heatmap)
         const heatmapParams = new URLSearchParams();
         storeIds.forEach(id => heatmapParams.append("storeId", id.toString()));
@@ -184,29 +234,41 @@ export default function SalesPage() {
           heatmapParams.set("days", "30");
         }
 
+        console.log("Fetching heatmap with params:", heatmapParams.toString());
+
         // Se não houver filtro de data, usar últimos 30 dias para os gráficos
         const chartParams = new URLSearchParams(params);
         if (!startDate && !endDate) {
           chartParams.set("days", "30");
         }
 
-        const [salesRes, summaryRes, byDayRes, heatmapRes] = await Promise.all([
+        // Params para comparação (sem filtro de data, apenas outros filtros)
+        const comparisonParams = new URLSearchParams();
+        storeIds.forEach(id => comparisonParams.append("storeId", id.toString()));
+        if (channelId) comparisonParams.append("channelId", channelId);
+        if (status) comparisonParams.append("status", status);
+        selectedDays.forEach(day => comparisonParams.append("daysOfWeek", day.toString()));
+
+        const [salesRes, summaryRes, byDayRes, heatmapRes, comparisonRes] = await Promise.all([
           fetch(`/api/sales?${params}`),
           fetch(`/api/sales/summary?${params}`),
           fetch(`/api/sales/by-day?${chartParams}`),
           fetch(`/api/sales/heatmap?${heatmapParams}`),
+          fetch(`/api/sales/comparison?${comparisonParams}`),
         ]);
         
         const salesData = await salesRes.json();
         const summaryData = await summaryRes.json();
         const byDayData = await byDayRes.json();
         const heatmapDataRes = await heatmapRes.json();
+        const comparisonData = await comparisonRes.json();
         
         setSales(salesData.data || []);
         setTotal(salesData.pagination?.total || 0);
         setSummary(summaryData.data || {});
         setSalesByDay(byDayData.data || []);
         setHeatmapData(heatmapDataRes.data || []);
+        setComparison(comparisonData.data || null);
       } catch (error) {
         console.error("Error fetching sales:", error);
       } finally {
@@ -433,28 +495,22 @@ export default function SalesPage() {
           {/* Date Filters */}
           <div className="mt-4 flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-600">De:</label>
-              <input
-                type="date"
-                value={startDate}
+              <label className="text-sm font-medium text-slate-600">Mês/Ano:</label>
+              <select
+                value={selectedMonthYear}
                 onChange={(e) => {
-                  setStartDate(e.target.value);
+                  setSelectedMonthYear(e.target.value);
                   setPage(1);
                 }}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-600">Até:</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setPage(1);
-                }}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+              >
+                <option value="">Todos os períodos</option>
+                {monthYearOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -496,11 +552,12 @@ export default function SalesPage() {
                 </label>
               ))}
             </div>
-            {(storeIds.length > 0 || channelId || startDate || endDate || status || selectedDays.length > 0) && (
+            {(storeIds.length > 0 || channelId || selectedMonthYear || status || selectedDays.length > 0) && (
               <button
                 onClick={() => {
                   setStoreIds([]);
                   setChannelId("");
+                  setSelectedMonthYear("");
                   setStartDate("");
                   setEndDate("");
                   setStatus("");
@@ -542,6 +599,101 @@ export default function SalesPage() {
           </div>
         </div>
 
+        {/* Month Comparison Chart */}
+        {comparison && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Comparação: Mês Atual vs Mês Anterior
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Comparando {new Date(comparison.currentMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')} com {new Date(comparison.lastMonth.period.start).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}
+            </p>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Faturamento Comparison */}
+              <div className="p-4 border border-slate-200 rounded-lg">
+                <p className="text-sm font-medium text-slate-600 mb-2">Faturamento</p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <p className="text-2xl font-bold text-slate-900">
+                    {formatCurrency(Number(comparison.currentMonth.totalRevenue))}
+                  </p>
+                  <div className={`flex items-center gap-1 text-sm font-medium ${
+                    comparison.changes.revenue >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {comparison.changes.revenue >= 0 ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    {Math.abs(comparison.changes.revenue).toFixed(1)}%
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Mês anterior: {formatCurrency(Number(comparison.lastMonth.totalRevenue))}
+                </p>
+              </div>
+
+              {/* Total Sales Comparison */}
+              <div className="p-4 border border-slate-200 rounded-lg">
+                <p className="text-sm font-medium text-slate-600 mb-2">Total de Vendas</p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <p className="text-2xl font-bold text-slate-900">
+                    {(comparison.currentMonth.totalSales || 0).toLocaleString('pt-BR')}
+                  </p>
+                  <div className={`flex items-center gap-1 text-sm font-medium ${
+                    comparison.changes.sales >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {comparison.changes.sales >= 0 ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    {Math.abs(comparison.changes.sales).toFixed(1)}%
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Mês anterior: {(comparison.lastMonth.totalSales || 0).toLocaleString('pt-BR')}
+                </p>
+              </div>
+
+              {/* Average Ticket Comparison */}
+              <div className="p-4 border border-slate-200 rounded-lg">
+                <p className="text-sm font-medium text-slate-600 mb-2">Ticket Médio</p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <p className="text-2xl font-bold text-slate-900">
+                    {formatCurrency(Number(comparison.currentMonth.averageTicket))}
+                  </p>
+                  <div className={`flex items-center gap-1 text-sm font-medium ${
+                    comparison.changes.ticket >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {comparison.changes.ticket >= 0 ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    {Math.abs(comparison.changes.ticket).toFixed(1)}%
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Mês anterior: {formatCurrency(Number(comparison.lastMonth.averageTicket))}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Charts Section */}
         <div className="mb-8">
           <div className="grid md:grid-cols-2 gap-6">
@@ -566,7 +718,9 @@ export default function SalesPage() {
                   <Tooltip
                     labelFormatter={(value) => {
                       const date = new Date(value);
-                      return date.toLocaleDateString("pt-BR");
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const year = String(date.getFullYear()).slice(-2);
+                      return `${month}/${year}`;
                     }}
                     formatter={(value: any) => value.toLocaleString("pt-BR")}
                   />
@@ -608,14 +762,18 @@ export default function SalesPage() {
                     tick={{ fontSize: 12 }}
                     tickFormatter={(value) => {
                       const date = new Date(value);
-                      return `${date.getDate()}/${date.getMonth() + 1}`;
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const year = String(date.getFullYear()).slice(-2);
+                      return `${month}/${year}`;
                     }}
                   />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip
                     labelFormatter={(value) => {
                       const date = new Date(value);
-                      return date.toLocaleDateString("pt-BR");
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const year = String(date.getFullYear()).slice(-2);
+                      return `${month}/${year}`;
                     }}
                     formatter={(value: any) =>
                       new Intl.NumberFormat("pt-BR", {
@@ -654,11 +812,11 @@ export default function SalesPage() {
               </h3>
               <p className="text-sm text-slate-600 mt-1">
                 {startDate && endDate 
-                  ? `Período: ${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')}`
+                  ? `Período: ${new Date(startDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')} a ${new Date(endDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
                   : startDate 
-                  ? `A partir de ${new Date(startDate).toLocaleDateString('pt-BR')}`
+                  ? `A partir de ${new Date(startDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
                   : endDate
-                  ? `Até ${new Date(endDate).toLocaleDateString('pt-BR')}`
+                  ? `Até ${new Date(endDate).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }).replace('/', '/')}`
                   : 'Últimos 30 dias'
                 }
                 {heatmapData.length > 0 && (

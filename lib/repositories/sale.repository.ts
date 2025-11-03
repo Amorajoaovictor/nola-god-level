@@ -196,21 +196,21 @@ export class SaleRepository implements ISaleRepository {
     if (daysOfWeek && daysOfWeek.length > 0) {
       // Use raw SQL para filtrar por múltiplos dias da semana
       let query = `
-        SELECT COALESCE(SUM("totalAmount"), 0)::numeric as total
-        FROM "Sale"
-        WHERE EXTRACT(DOW FROM "createdAt")::int = ANY(ARRAY[${daysOfWeek.join(',')}])
+        SELECT COALESCE(SUM(total_amount), 0)::numeric as total
+        FROM sales
+        WHERE EXTRACT(DOW FROM created_at)::int = ANY(ARRAY[${daysOfWeek.join(',')}])
       `;
       
       if (storeIds && storeIds.length > 0) {
-        query += ` AND "storeId" = ANY(ARRAY[${storeIds.join(',')}])`;
+        query += ` AND store_id = ANY(ARRAY[${storeIds.join(',')}])`;
       }
       
       if (startDate) {
-        query += ` AND "createdAt" >= '${startDate.toISOString()}'`;
+        query += ` AND created_at >= '${startDate.toISOString()}'`;
       }
       
       if (endDate) {
-        query += ` AND "createdAt" <= '${endDate.toISOString()}'`;
+        query += ` AND created_at <= '${endDate.toISOString()}'`;
       }
       
       const result = await prisma.$queryRawUnsafe<[{ total: bigint | null }]>(query);

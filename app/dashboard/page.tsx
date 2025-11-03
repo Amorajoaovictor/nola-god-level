@@ -27,19 +27,72 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [showPeriodFilter, setShowPeriodFilter] = useState(false);
   
   // Estados de lojas
   const [stores, setStores] = useState<any[]>([]);
   const [storeId, setStoreId] = useState("");
   
-  // Estados temporários (inputs do usuário)
-  const [tempStartDate, setTempStartDate] = useState("");
-  const [tempEndDate, setTempEndDate] = useState("");
+  // Estado de mês/ano selecionado
+  const [selectedMonthYear, setSelectedMonthYear] = useState<string>("");
   
   // Estados aplicados (usados na busca)
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  
+  // Atualizar startDate e endDate quando selectedMonthYear muda
+  useEffect(() => {
+    if (selectedMonthYear) {
+      const [year, month] = selectedMonthYear.split('-');
+      const firstDay = `${year}-${month}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      const lastDayStr = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      
+      setStartDate(firstDay);
+      setEndDate(lastDayStr);
+    } else {
+      setStartDate("");
+      setEndDate("");
+    }
+  }, [selectedMonthYear]);
+  
+  // Gerar opções de mês/ano
+  const generateMonthYearOptions = () => {
+    const options: { value: string; label: string }[] = [];
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    const months = [
+      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+    
+    // Gerar últimos 36 meses (3 anos)
+    for (let i = 0; i < 36; i++) {
+      const date = new Date(currentYear, currentMonth - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthStr = String(month + 1).padStart(2, '0');
+      
+      options.push({
+        value: `${year}-${monthStr}`,
+        label: `${months[month]}/${year}`
+      });
+    }
+    
+    return options;
+  };
+  
+  const monthYearOptions = generateMonthYearOptions();
+  
+  // Helper para formatar data no badge
+  const formatMonthYear = (dateStr: string) => {
+    if (!dateStr) return "";
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const [year, month] = dateStr.split('-');
+    return `${months[parseInt(month) - 1]}/${year}`;
+  };
 
   // Buscar lista de lojas
   useEffect(() => {
@@ -157,27 +210,6 @@ export default function DashboardPage() {
     fetchSummary(true);
   };
 
-  const handleApplyPeriodFilter = () => {
-    // Aplica os valores temporários aos estados de busca
-    setStartDate(tempStartDate);
-    setEndDate(tempEndDate);
-    setShowPeriodFilter(false);
-    // Limpa cache antigo e força refresh
-    localStorage.removeItem(CACHE_KEY);
-    // O useEffect será disparado automaticamente pela mudança de startDate/endDate
-  };
-
-  const handleClearPeriodFilter = () => {
-    setTempStartDate("");
-    setTempEndDate("");
-    setStartDate("");
-    setEndDate("");
-    setStoreId("");
-    setShowPeriodFilter(false);
-    // Limpa cache e recarrega
-    localStorage.removeItem(CACHE_KEY);
-  };
-
   const exportToCSV = () => {
     const data = [
       ["Métrica", "Valor"],
@@ -261,6 +293,20 @@ export default function DashboardPage() {
                 ))}
               </select>
               
+              {/* Filtro de Mês/Ano */}
+              <select
+                value={selectedMonthYear}
+                onChange={(e) => setSelectedMonthYear(e.target.value)}
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+              >
+                <option value="">Todos os períodos</option>
+                {monthYearOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -281,64 +327,6 @@ export default function DashboardPage() {
                 </svg>
                 {refreshing ? "Atualizando..." : "Atualizar"}
               </button>
-              <div className="relative">
-                <button 
-                  onClick={() => setShowPeriodFilter(!showPeriodFilter)}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Filtrar Período
-                  {(startDate || endDate) && (
-                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">●</span>
-                  )}
-                </button>
-                
-                {showPeriodFilter && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-slate-200 z-10 p-4">
-                    <h3 className="text-sm font-semibold text-slate-900 mb-3">Filtrar por Período</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-700 mb-1">
-                          Data Inicial
-                        </label>
-                        <input
-                          type="date"
-                          value={tempStartDate}
-                          onChange={(e) => setTempStartDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-700 mb-1">
-                          Data Final
-                        </label>
-                        <input
-                          type="date"
-                          value={tempEndDate}
-                          onChange={(e) => setTempEndDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={handleClearPeriodFilter}
-                          className="flex-1 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
-                        >
-                          Limpar
-                        </button>
-                        <button
-                          onClick={handleApplyPeriodFilter}
-                          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                        >
-                          Aplicar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
               <button 
                 onClick={exportToCSV}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
@@ -354,7 +342,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Filtros Ativos */}
-      {(storeId || startDate || endDate) && (
+      {(storeId || selectedMonthYear) && (
         <div className="bg-blue-50 border-b border-blue-100">
           <div className="container mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
@@ -365,19 +353,17 @@ export default function DashboardPage() {
                     Loja: {stores.find(s => s.id.toString() === storeId)?.name}
                   </span>
                 )}
-                {startDate && (
+                {selectedMonthYear && (
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    De: {new Date(startDate).toLocaleDateString('pt-BR')}
-                  </span>
-                )}
-                {endDate && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    Até: {new Date(endDate).toLocaleDateString('pt-BR')}
+                    Período: {monthYearOptions.find(opt => opt.value === selectedMonthYear)?.label}
                   </span>
                 )}
               </div>
               <button
-                onClick={handleClearPeriodFilter}
+                onClick={() => {
+                  setStoreId("");
+                  setSelectedMonthYear("");
+                }}
                 className="text-sm text-blue-700 hover:text-blue-900 font-medium"
               >
                 Limpar todos os filtros
