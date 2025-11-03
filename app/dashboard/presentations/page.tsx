@@ -2,7 +2,190 @@
 
 import { useState, useEffect } from "react";
 import { PresentationStore, Presentation, Slide } from "@/lib/presentation/presentation-store";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { 
+  BarChart, 
+  Bar, 
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from "recharts";
+
+const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+
+// Componentes de renderização do editor
+function TitleComponent({ content, styles }: any) {
+  return (
+    <h1 
+      className={`text-4xl font-bold ${styles?.textAlign || 'text-center'} ${styles?.color || 'text-slate-900'}`}
+      style={{ color: styles?.customColor }}
+    >
+      {content.text}
+    </h1>
+  );
+}
+
+function SubtitleComponent({ content, styles }: any) {
+  return (
+    <h2 
+      className={`text-2xl font-semibold ${styles?.textAlign || 'text-center'} ${styles?.color || 'text-slate-700'}`}
+      style={{ color: styles?.customColor }}
+    >
+      {content.text}
+    </h2>
+  );
+}
+
+function TextComponent({ content, styles }: any) {
+  return (
+    <p 
+      className={`text-lg ${styles?.textAlign || 'text-left'} ${styles?.color || 'text-slate-600'}`}
+      style={{ color: styles?.customColor }}
+    >
+      {content.text}
+    </p>
+  );
+}
+
+function ImageComponent({ content }: any) {
+  return (
+    <div className="flex justify-center">
+      <img 
+        src={content.url} 
+        alt={content.alt || "Imagem"} 
+        className="max-w-full h-auto rounded-lg shadow-lg"
+        style={{ maxHeight: content.maxHeight || '400px' }}
+      />
+    </div>
+  );
+}
+
+function MetricComponentEditor({ content }: any) {
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+      <p className="text-sm font-medium text-slate-600 mb-2">{content.label}</p>
+      <p className="text-5xl font-bold text-blue-600">{content.value}</p>
+      {content.subtitle && (
+        <p className="text-sm text-slate-500 mt-2">{content.subtitle}</p>
+      )}
+    </div>
+  );
+}
+
+function ChartComponentEditor({ content, type }: any) {
+  const data = content.data || [];
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <p className="text-center text-slate-500">Sem dados para exibir</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      {content.title && (
+        <h3 className="text-xl font-semibold text-slate-900 mb-4">{content.title}</h3>
+      )}
+      <ResponsiveContainer width="100%" height={content.height || 300}>
+        {type === "barChart" && (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={content.xKey || "name"} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey={content.yKey || "value"} fill={content.color || "#3b82f6"} />
+          </BarChart>
+        )}
+        {type === "lineChart" && (
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={content.xKey || "name"} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line 
+              type="monotone" 
+              dataKey={content.yKey || "value"} 
+              stroke={content.color || "#3b82f6"}
+              strokeWidth={2}
+            />
+          </LineChart>
+        )}
+        {type === "areaChart" && (
+          <AreaChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={content.xKey || "name"} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Area 
+              type="monotone" 
+              dataKey={content.yKey || "value"} 
+              stroke={content.color || "#3b82f6"}
+              fill={content.color || "#3b82f6"}
+              fillOpacity={0.6}
+            />
+          </AreaChart>
+        )}
+        {type === "pieChart" && (
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              dataKey={content.yKey || "value"}
+              nameKey={content.xKey || "name"}
+              label
+            >
+              {data.map((_: any, index: number) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function renderEditorComponent(component: any) {
+  const { type, content, styles } = component;
+
+  switch (type) {
+    case "title":
+      return <TitleComponent content={content} styles={styles} />;
+    case "subtitle":
+      return <SubtitleComponent content={content} styles={styles} />;
+    case "text":
+      return <TextComponent content={content} styles={styles} />;
+    case "image":
+      return <ImageComponent content={content} />;
+    case "metric":
+      return <MetricComponentEditor content={content} />;
+    case "barChart":
+    case "lineChart":
+    case "areaChart":
+    case "pieChart":
+      return <ChartComponentEditor content={content} type={type} />;
+    default:
+      return null;
+  }
+}
 
 export default function PresentationsPage() {
   const [presentation, setPresentation] = useState<Presentation | null>(null);
@@ -144,6 +327,25 @@ export default function PresentationsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        );
+
+      case 'custom':
+        // Slides criados no editor avançado
+        if (Array.isArray(slide.data)) {
+          return (
+            <div className="space-y-6">
+              {slide.data.map((component: any, idx: number) => (
+                <div key={idx}>
+                  {renderEditorComponent(component)}
+                </div>
+              ))}
+            </div>
+          );
+        }
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <p className="text-center text-slate-500">Slide customizado sem componentes</p>
           </div>
         );
 
