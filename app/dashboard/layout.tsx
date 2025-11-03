@@ -88,6 +88,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </a>
               
               <a
+                href="/dashboard/presentation"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+              >
+                <span>✨</span>
+                <span className="font-medium">Editor Avançado</span>
+              </a>
+              
+              <a
                 href="/docs"
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
               >

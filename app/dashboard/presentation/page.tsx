@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { PresentationStore } from "@/lib/presentation/presentation-store";
 import {
   BarChart,
   Bar,
@@ -615,8 +616,43 @@ export default function PresentationPage() {
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [showComponentPicker, setShowComponentPicker] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const currentSlide = slides[currentSlideIndex];
+
+  // Salvar slide atual na apresentação
+  const saveCurrentSlideToPresentation = () => {
+    if (!currentSlide || currentSlide.components.length === 0) {
+      alert('Adicione componentes ao slide antes de salvar!');
+      return;
+    }
+
+    setSaveStatus('saving');
+    
+    try {
+      // Converter o slide do editor para o formato do PresentationStore
+      // Por enquanto vamos salvar como tipo 'custom' com o conteúdo completo
+      PresentationStore.addSlide({
+        id: Date.now().toString(),
+        title: currentSlide.title || 'Slide Customizado',
+        type: 'custom',
+        data: currentSlide.components,
+        config: {
+          background: currentSlide.background,
+        },
+        createdAt: Date.now(),
+      });
+
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      
+      alert('✅ Slide salvo na apresentação com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar slide:', error);
+      alert('❌ Erro ao salvar slide. Tente novamente.');
+      setSaveStatus('idle');
+    }
+  };
 
   // Adicionar novo slide
   const addSlide = () => {
@@ -829,6 +865,32 @@ export default function PresentationPage() {
               <p className="text-sm text-slate-600">Crie apresentações personalizadas com seus dados</p>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={saveCurrentSlideToPresentation}
+                disabled={saveStatus === 'saving' || currentSlide.components.length === 0}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              >
+                {saveStatus === 'saving' ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Salvando...
+                  </>
+                ) : saveStatus === 'saved' ? (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Salvo!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Salvar na Apresentação
+                  </>
+                )}
+              </button>
               <button
                 onClick={() => setPresentationMode(true)}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"

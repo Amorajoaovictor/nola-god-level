@@ -2,9 +2,25 @@
 
 ## 🎯 Visão Geral
 
-Sistema completo para criar apresentações a partir dos dados do dashboard, com slides salvos em cache (localStorage) e exportação para JSON.
+O sistema de apresentações oferece **duas ferramentas complementares** para criar e gerenciar apresentações de dados:
 
-## ✨ Funcionalidades
+### 🎬 **1. Apresentações** (`/dashboard/presentations`)
+Sistema de gerenciamento de slides capturados do dashboard.
+- Adicione componentes existentes como slides
+- Gerencie múltiplas apresentações
+- Modo apresentação fullscreen
+- Armazenamento em localStorage
+
+### ✨ **2. Editor Avançado** (`/dashboard/presentation`)
+Editor visual completo para criar slides customizados.
+- Crie slides do zero com componentes personalizados
+- Conecte com APIs em tempo real
+- Filtros e transformações avançadas
+- Presets de métricas e gráficos
+
+---
+
+## ✨ Funcionalidades - Captura Rápida
 
 ### 1. **Botão "Adicionar ao Slide"**
 - Disponível em qualquer componente visual do dashboard
