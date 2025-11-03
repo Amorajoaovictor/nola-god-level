@@ -575,7 +575,7 @@ export default function SalesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-6 md:py-8">
         {/* Stats Cards */}
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Resumo de Vendas</h2>
@@ -615,22 +615,22 @@ export default function SalesPage() {
             variant="ghost"
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
+          <div className="bg-white p-4 md:p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Vendas</p>
             <p className="text-xl md:text-2xl font-bold text-slate-900">{(summary.totalSales || 0).toLocaleString("pt-BR")}</p>
           </div>
-          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Faturamento</p>
             <p className="text-xl md:text-2xl font-bold text-slate-900">{formatCurrency(Number(summary.totalRevenue || 0))}</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Vendas Completas</p>
             <p className="text-2xl font-bold text-green-600">
               {(summary.completedSales || 0).toLocaleString("pt-BR")}
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Vendas Canceladas</p>
             <p className="text-2xl font-bold text-red-600">
               {(summary.cancelledSales || 0).toLocaleString("pt-BR")}
@@ -640,7 +640,7 @@ export default function SalesPage() {
 
         {/* Month Comparison Chart */}
         {comparison && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 md:mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
@@ -686,7 +686,7 @@ export default function SalesPage() {
               />
             </div>
             
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {/* Faturamento Comparison */}
               <div className="p-4 border border-slate-200 rounded-lg">
                 <p className="text-sm font-medium text-slate-600 mb-2">Faturamento</p>
@@ -772,10 +772,10 @@ export default function SalesPage() {
         )}
 
         {/* Charts Section */}
-        <div className="mb-8">
-          <div className="grid md:grid-cols-2 gap-6">
+        <div className="mb-6 md:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Sales Trend Line Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Evolução de Vendas {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
@@ -838,7 +838,7 @@ export default function SalesPage() {
           </div>
 
           {/* Revenue Area Chart */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
                 Faturamento Diário {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
@@ -917,8 +917,8 @@ export default function SalesPage() {
         </div>
 
         {/* Heatmap - Sales by Day of Week and Hour */}
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="mb-6 md:mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">

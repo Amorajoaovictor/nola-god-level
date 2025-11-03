@@ -449,8 +449,8 @@ function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refr
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-center py-8">
+      <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div className="flex items-center justify-center py-6 md:py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="ml-3 text-slate-600">Carregando dados...</span>
         </div>
@@ -460,7 +460,7 @@ function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refr
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
         <p className="text-center text-red-500">{error}</p>
       </div>
     );
@@ -468,14 +468,14 @@ function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refr
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
         <p className="text-center text-slate-500">Configure os dados do gráfico</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
       {content.title && (
         <h3 className="text-xl font-semibold text-slate-900 mb-4">{content.title}</h3>
       )}
@@ -969,7 +969,7 @@ export default function PresentationPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
@@ -1086,7 +1086,7 @@ export default function PresentationPage() {
           <div className="max-w-5xl mx-auto">
             {/* Slide Preview */}
             <div 
-              className="bg-white rounded-lg shadow-lg p-12 mb-8 min-h-[600px]"
+              className="bg-white rounded-lg shadow-lg p-12 mb-6 md:mb-8 min-h-[600px]"
               style={{ backgroundColor: currentSlide.background }}
             >
               <div className="space-y-6">
@@ -1206,7 +1206,7 @@ export default function PresentationPage() {
 
         {/* Right Sidebar - Component Editor */}
         {editingComponent && (
-          <div className="w-80 bg-white border-l overflow-y-auto p-6">
+          <div className="w-80 bg-white border-l overflow-y-auto p-4 md:p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-900">Editar Componente</h3>
               <button

@@ -190,7 +190,7 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">📦 Análise de Pedidos</h1>
           <p className="text-slate-600">Tempo de entrega, produtos populares e performance por dia</p>
         </div>
@@ -205,10 +205,10 @@ export default function OrdersPage() {
         )}
 
         {/* Filtros */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 md:mb-8">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">🔍 Filtros</h3>
           
-          <div className="grid md:grid-cols-3 gap-6 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4">
             {/* Filtro de Lojas */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -335,36 +335,36 @@ export default function OrdersPage() {
             />
           )}
         </div>
-        <div className="grid md:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="grid md:grid-cols-5 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">⏱️ Tempo Médio de Entrega</p>
             <p className="text-3xl font-bold text-blue-600">
               {deliveryStats ? formatTime(deliveryStats.avgDeliveryTime) : "-"}
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">👨‍🍳 Tempo Médio de Preparo</p>
             <p className="text-3xl font-bold text-purple-600">
               {deliveryStats ? formatTime(deliveryStats.avgPreparationTime) : "-"}
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">🚀 Entrega Mais Rápida</p>
             <p className="text-3xl font-bold text-green-600">
               {deliveryStats ? formatTime(deliveryStats.minDeliveryTime) : "-"}
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">🐌 Entrega Mais Lenta</p>
             <p className="text-3xl font-bold text-red-600">
               {deliveryStats ? formatTime(deliveryStats.maxDeliveryTime) : "-"}
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-2">📊 Total de Pedidos</p>
             <p className="text-3xl font-bold text-slate-900">
               {deliveryStats ? deliveryStats.totalOrders.toLocaleString('pt-BR') : "-"}
@@ -373,9 +373,9 @@ export default function OrdersPage() {
         </div>
 
         {/* Gráficos */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
           {/* Tempo de Entrega por Loja */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
                 ⏱️ Tempo de Entrega e Preparo por Loja
@@ -422,12 +422,12 @@ export default function OrdersPage() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-slate-500 py-8">Nenhum dado disponível</p>
+              <p className="text-center text-slate-500 py-6 md:py-8">Nenhum dado disponível</p>
             )}
           </div>
 
           {/* Pedidos por Loja */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
                 📊 Distribuição de Pedidos por Loja
@@ -468,13 +468,13 @@ export default function OrdersPage() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-slate-500 py-8">Nenhum dado disponível</p>
+              <p className="text-center text-slate-500 py-6 md:py-8">Nenhum dado disponível</p>
             )}
           </div>
         </div>
 
         {/* Produtos Populares por Dia */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-900">
               🍔 Produtos Mais Populares por Dia da Semana
@@ -510,7 +510,7 @@ export default function OrdersPage() {
           </div>
           
           {productsByDay.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {productsByDay.map((day) => (
                 <div key={day.dayOfWeek} className="border border-slate-200 rounded-lg p-4">
                   <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
@@ -544,7 +544,7 @@ export default function OrdersPage() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-slate-500 py-8">
+            <p className="text-center text-slate-500 py-6 md:py-8">
               Nenhum dado disponível para o período selecionado
             </p>
           )}

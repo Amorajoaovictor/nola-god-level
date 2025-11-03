@@ -189,11 +189,11 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Produtos</h1>
-              <div className="flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">Produtos</h1>
+              <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                 <p className="text-sm text-slate-600">
                   Análise de performance dos produtos
                 </p>
@@ -204,10 +204,10 @@ export default function ProductsPage() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -221,7 +221,7 @@ export default function ProductsPage() {
               <button
                 onClick={handleRefreshStats}
                 disabled={refreshingStats}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <svg
                   className={`w-4 h-4 ${refreshingStats ? "animate-spin" : ""}`}
@@ -265,12 +265,12 @@ export default function ProductsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Painel de Filtros */}
         {showFilters && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">Filtros</h3>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Loja
@@ -330,7 +330,7 @@ export default function ProductsPage() {
         )}
 
         {/* Stats Cards */}
-        <div className="space-y-6 mb-8">
+        <div className="space-y-6 mb-6 md:mb-8">
           {/* Header com botão para adicionar ao slide */}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Métricas dos Produtos</h2>
@@ -371,8 +371,8 @@ export default function ProductsPage() {
           </div>
           
           {/* Linha 1 - Métricas Globais */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-slate-600 mb-1">
                 Total de Produtos
               </p>
@@ -386,7 +386,7 @@ export default function ProductsPage() {
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-slate-600 mb-1">
                 Receita Total {(storeId || startDate || endDate) && "(Filtrada)"}
               </p>
@@ -400,7 +400,7 @@ export default function ProductsPage() {
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-slate-600 mb-1">
                 Quantidade Total {(storeId || startDate || endDate) && "(Filtrada)"}
               </p>
@@ -416,8 +416,8 @@ export default function ProductsPage() {
           </div>
 
           {/* Linha 2 - Métricas do Top N */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-lg shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 md:p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-emerald-900 mb-1">
                 Receita (Top {limit})
               </p>
@@ -429,7 +429,7 @@ export default function ProductsPage() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-sky-50 to-sky-100 p-6 rounded-lg shadow-sm">
+            <div className="bg-gradient-to-br from-sky-50 to-sky-100 p-4 md:p-6 rounded-lg shadow-sm">
               <p className="text-sm font-medium text-sky-900 mb-1">
                 Quantidade (Top {limit})
               </p>
@@ -444,7 +444,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Products Grid */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-slate-900">
               Top {limit} Produtos Mais Vendidos
@@ -540,8 +540,8 @@ export default function ProductsPage() {
         </div>
 
         {/* Insights Section */}
-        <div className="mt-8 grid md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-6 rounded-lg">
             <h3 className="text-lg font-semibold text-blue-900 mb-2">
               💡 Insight: Produto mais popular
             </h3>
@@ -551,7 +551,7 @@ export default function ProductsPage() {
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 md:p-6 rounded-lg">
             <h3 className="text-lg font-semibold text-green-900 mb-2">
               💰 Insight: Maior receita
             </h3>

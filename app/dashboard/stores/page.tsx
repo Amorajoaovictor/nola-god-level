@@ -126,19 +126,19 @@ export default function StoresPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Lojas</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">Lojas</h1>
               <p className="text-sm text-slate-600">
                 Gestão e análise de performance das lojas
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="relative">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <div className="relative w-full sm:w-auto">
                 <button
                   onClick={() => setShowRegionFilter(!showRegionFilter)}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -183,10 +183,10 @@ export default function StoresPage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                 <button
                   onClick={handleCompareToggle}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                  className={`w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg ${
                     compareMode
                       ? "text-white bg-blue-600 hover:bg-blue-700"
                       : "text-slate-700 bg-white border border-slate-300 hover:bg-slate-50"
@@ -210,7 +210,7 @@ export default function StoresPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Stats Cards */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Estatísticas das Lojas</h2>
@@ -246,23 +246,23 @@ export default function StoresPage() {
             variant="ghost"
           />
         </div>
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-4 md:gap-6 mb-6 md:mb-6 md:mb-8">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Lojas</p>
             <p className="text-2xl font-bold text-slate-900">{stores.length}</p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Lojas Ativas</p>
             <p className="text-2xl font-bold text-green-600">{activeStores}</p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Lojas Próprias</p>
             <p className="text-2xl font-bold text-blue-600">{ownStores}</p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Franquias</p>
             <p className="text-2xl font-bold text-purple-600">
               {stores.length - ownStores}
@@ -271,7 +271,7 @@ export default function StoresPage() {
         </div>
 
         {/* Stores Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {loading ? (
             <div className="col-span-full flex justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -286,7 +286,7 @@ export default function StoresPage() {
             filteredStores.slice(0, 12).map((store) => (
               <div
                 key={store.id}
-                className={`bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all ${
+                className={`bg-white rounded-lg shadow-sm p-4 md:p-6 hover:shadow-md transition-all ${
                   compareMode && selectedStores.includes(store.id)
                     ? "ring-2 ring-blue-500"
                     : ""
@@ -364,7 +364,7 @@ export default function StoresPage() {
 
         {/* Map Placeholder */}
         {stores.length > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
+          <div className="mt-8 bg-white rounded-lg shadow-sm p-4 md:p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">
               Mapa de Lojas
             </h2>
@@ -386,7 +386,7 @@ export default function StoresPage() {
         {storePerformance && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200">
+              <div className="p-4 md:p-6 border-b border-slate-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-900">
                     Performance da Loja
@@ -402,12 +402,12 @@ export default function StoresPage() {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <h3 className="font-semibold text-lg text-slate-900 mb-4">
                   {stores.find((s) => s.id === storePerformance.storeId)?.name}
                 </h3>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-lg">
                     <p className="text-sm text-slate-600 mb-1">Receita Total</p>
                     <p className="text-2xl font-bold text-green-600">
@@ -471,7 +471,7 @@ export default function StoresPage() {
         {showStoreDetails && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200">
+              <div className="p-4 md:p-6 border-b border-slate-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-900">
                     Detalhes da Loja
@@ -492,7 +492,7 @@ export default function StoresPage() {
                 if (!store) return null;
 
                 return (
-                  <div className="p-6 space-y-6">
+                  <div className="p-4 md:p-6 space-y-6">
                     <div>
                       <h3 className="font-semibold text-lg text-slate-900 mb-2">{store.name}</h3>
                       <div className="flex gap-2">
@@ -575,7 +575,7 @@ export default function StoresPage() {
         {showComparison && comparisonData.length > 0 && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200">
+              <div className="p-4 md:p-6 border-b border-slate-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-slate-900">
                     Comparação de Lojas
@@ -616,7 +616,7 @@ export default function StoresPage() {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 {/* Headers das Lojas */}
                 <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: `repeat(${comparisonData.length}, 1fr)` }}>
                   {comparisonData.map(({ store }) => (
