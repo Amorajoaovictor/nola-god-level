@@ -21,6 +21,102 @@ import {
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
+// Transformações disponíveis para dados da API
+const applyTransform = (data: any, transform: string, config: ApiConfig) => {
+  switch (transform) {
+    case "salesByDay":
+      // Transforma: { date: "2025-11-01", totalSales: 100 }
+      // Para: { name: "01/11", value: 100 }
+      return data.map((item: any) => ({
+        name: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        value: item.totalSales || item.count || 0,
+        revenue: item.totalRevenue || 0,
+      }));
+    
+    case "topProducts":
+      // Transforma: { product: { name: "Pizza" }, totalQuantity: 50 }
+      // Para: { name: "Pizza", value: 50 }
+      return data.map((item: any) => ({
+        name: item.product?.name || item.name || "Produto",
+        value: item.totalQuantity || item.quantity || 0,
+        revenue: item.totalRevenue || 0,
+      }));
+    
+    case "storesComparison":
+      // Transforma: { store: { name: "Loja A" }, totalSales: 200 }
+      // Para: { name: "Loja A", value: 200 }
+      return data.map((item: any) => ({
+        name: item.store?.name || item.name || "Loja",
+        value: item.totalSales || item.sales || 0,
+        revenue: item.totalRevenue || item.revenue || 0,
+      }));
+    
+    case "summary":
+      // Transforma objeto summary em array de métricas
+      return [
+        { label: "Total Vendas", value: data.totalSales || 0 },
+        { label: "Faturamento", value: data.totalRevenue || 0 },
+        { label: "Ticket Médio", value: data.averageTicket || 0 },
+      ];
+    
+    case "statusDistribution":
+      // Transforma: { completedSales: 100, cancelledSales: 10 }
+      // Para: [{ name: "Completas", value: 100 }, ...]
+      return [
+        { name: "Completas", value: data.completedSales || 0 },
+        { name: "Canceladas", value: data.cancelledSales || 0 },
+        { name: "Pendentes", value: data.pendingSales || 0 },
+      ];
+    
+    default:
+      return data;
+  }
+};
+
+// Configurações de API pré-definidas
+const API_PRESETS = {
+  salesSummary: {
+    name: "Resumo de Vendas",
+    endpoint: "/api/sales/summary",
+    dataPath: "data",
+    transform: "summary",
+  },
+  salesByDay: {
+    name: "Vendas por Dia (30 dias)",
+    endpoint: "/api/sales/by-day",
+    params: { days: "30" },
+    dataPath: "data",
+    transform: "salesByDay",
+    xKey: "name",
+    yKey: "value",
+  },
+  topProducts: {
+    name: "Top 10 Produtos",
+    endpoint: "/api/products/top-selling",
+    params: { limit: "10" },
+    dataPath: "data",
+    transform: "topProducts",
+    xKey: "name",
+    yKey: "value",
+  },
+  storesComparison: {
+    name: "Comparação de Lojas",
+    endpoint: "/api/stores",
+    dataPath: "data",
+    transform: "storesComparison",
+    xKey: "name",
+    yKey: "value",
+  },
+  statusDistribution: {
+    name: "Distribuição por Status",
+    endpoint: "/api/sales/summary",
+    dataPath: "data",
+    transform: "statusDistribution",
+    xKey: "name",
+    yKey: "value",
+  },
+};
+
 // Tipos de componentes disponíveis
 type ComponentType = 
   | "title" 
@@ -34,11 +130,42 @@ type ComponentType =
   | "metric"
   | "twoColumns";
 
+type DataSource = "static" | "api";
+
+interface ApiConfig {
+  endpoint: string;
+  params?: Record<string, string>;
+  dataPath?: string; // Caminho para acessar os dados na resposta
+  xKey?: string;
+  yKey?: string;
+  transform?: string; // Nome da transformação a aplicar
+  valueKey?: string; // Para métricas
+  format?: string; // Para métricas
+  filters?: {
+    startDate?: string;
+    endDate?: string;
+    storeIds?: number[];
+    channelId?: number;
+    daysOfWeek?: number[];
+  };
+}
+
+interface DataSeries {
+  id: string;
+  name: string;
+  apiConfig: ApiConfig;
+  color: string;
+  yKey: string;
+}
+
 interface SlideComponent {
   id: string;
   type: ComponentType;
   content: any;
   styles?: any;
+  dataSource?: DataSource;
+  apiConfig?: ApiConfig;
+  dataSeries?: DataSeries[]; // Para gráficos com múltiplas linhas
 }
 
 interface Slide {
@@ -95,13 +222,77 @@ function ImageComponent({ content }: any) {
   );
 }
 
-function MetricComponent({ content }: any) {
+function MetricComponent({ content, dataSource, apiConfig, refreshTrigger }: any) {
+  const [data, setData] = useState<any>(content);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (dataSource === "api" && apiConfig?.endpoint) {
+      fetchMetricData();
+    } else {
+      setData(content);
+    }
+  }, [dataSource, refreshTrigger]); // Atualiza quando refreshTrigger mudar
+
+  const fetchMetricData = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams(apiConfig.params || {});
+      const url = `${apiConfig.endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      const response = await fetch(url);
+      const result = await response.json();
+      
+      let apiData = result;
+      if (apiConfig.dataPath) {
+        const paths = apiConfig.dataPath.split('.');
+        for (const path of paths) {
+          apiData = apiData?.[path];
+        }
+      }
+
+      // Extrair valor específico se indicado
+      const value = apiConfig.valueKey ? apiData[apiConfig.valueKey] : apiData;
+      
+      setData({
+        label: content.label,
+        value: formatMetricValue(value, apiConfig.format),
+        subtitle: content.subtitle,
+      });
+    } catch (err) {
+      console.error('Error fetching metric data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatMetricValue = (value: any, format?: string) => {
+    if (format === "currency") {
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(Number(value));
+    }
+    if (format === "number") {
+      return Number(value).toLocaleString("pt-BR");
+    }
+    return String(value);
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-      <p className="text-sm font-medium text-slate-600 mb-2">{content.label}</p>
-      <p className="text-5xl font-bold text-blue-600">{content.value}</p>
-      {content.subtitle && (
-        <p className="text-sm text-slate-500 mt-2">{content.subtitle}</p>
+      <p className="text-sm font-medium text-slate-600 mb-2">{data.label}</p>
+      <p className="text-5xl font-bold text-blue-600">{data.value}</p>
+      {data.subtitle && (
+        <p className="text-sm text-slate-500 mt-2">{data.subtitle}</p>
       )}
     </div>
   );
@@ -119,8 +310,155 @@ function TwoColumnsComponent({ content, components }: any) {
   );
 }
 
-function ChartComponent({ content, type }: any) {
-  if (!content.data || content.data.length === 0) {
+function ChartComponent({ content, type, dataSource, apiConfig, dataSeries, refreshTrigger }: any) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Buscar dados da API se dataSource for "api"
+  useEffect(() => {
+    if (dataSource === "api") {
+      if (dataSeries && dataSeries.length > 0) {
+        // Múltiplas séries de dados
+        fetchMultipleSeriesData();
+      } else if (apiConfig?.endpoint) {
+        // Série única
+        fetchApiData();
+      }
+    } else {
+      setData(content.data || []);
+    }
+  }, [dataSource, refreshTrigger]); // Atualiza quando refreshTrigger mudar
+
+  const buildApiUrl = (config: ApiConfig) => {
+    const params = new URLSearchParams(config.params || {});
+    
+    // Adicionar filtros
+    if (config.filters) {
+      if (config.filters.startDate) params.append("startDate", config.filters.startDate);
+      if (config.filters.endDate) params.append("endDate", config.filters.endDate);
+      if (config.filters.channelId) params.append("channelId", config.filters.channelId.toString());
+      if (config.filters.storeIds) {
+        config.filters.storeIds.forEach(id => params.append("storeId", id.toString()));
+      }
+      if (config.filters.daysOfWeek) {
+        config.filters.daysOfWeek.forEach(day => params.append("daysOfWeek", day.toString()));
+      }
+    }
+    
+    return `${config.endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
+  };
+
+  const fetchMultipleSeriesData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Buscar dados de todas as séries em paralelo
+      const promises = dataSeries.map(async (series: DataSeries) => {
+        const url = buildApiUrl(series.apiConfig);
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        let apiData = result;
+        if (series.apiConfig.dataPath) {
+          const paths = series.apiConfig.dataPath.split('.');
+          for (const path of paths) {
+            apiData = apiData?.[path];
+          }
+        }
+
+        if (series.apiConfig.transform && apiData) {
+          apiData = applyTransform(apiData, series.apiConfig.transform, series.apiConfig);
+        }
+
+        return { series, data: Array.isArray(apiData) ? apiData : [] };
+      });
+
+      const results = await Promise.all(promises);
+      
+      // Combinar dados de todas as séries
+      const combinedData = combineSeriesData(results);
+      setData(combinedData);
+    } catch (err) {
+      console.error('Error fetching multiple series data:', err);
+      setError('Erro ao carregar dados da API');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const combineSeriesData = (results: any[]) => {
+    // Criar um mapa de todos os pontos únicos no eixo X
+    const dataMap = new Map<string, any>();
+    
+    results.forEach(({ series, data }) => {
+      data.forEach((item: any) => {
+        const key = item.name || item[series.apiConfig.xKey || 'name'];
+        if (!dataMap.has(key)) {
+          dataMap.set(key, { name: key });
+        }
+        const entry = dataMap.get(key);
+        entry[series.yKey] = item.value || item[series.yKey];
+      });
+    });
+
+    return Array.from(dataMap.values());
+  };
+
+  const fetchApiData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = buildApiUrl(apiConfig);
+      
+      const response = await fetch(url);
+      const result = await response.json();
+      
+      // Acessar dados no caminho especificado (ex: "data.items")
+      let apiData = result;
+      if (apiConfig.dataPath) {
+        const paths = apiConfig.dataPath.split('.');
+        for (const path of paths) {
+          apiData = apiData?.[path];
+        }
+      }
+
+      // Aplicar transformação se especificada
+      if (apiConfig.transform && apiData) {
+        apiData = applyTransform(apiData, apiConfig.transform, apiConfig);
+      }
+
+      setData(Array.isArray(apiData) ? apiData : []);
+    } catch (err) {
+      console.error('Error fetching API data:', err);
+      setError('Erro ao carregar dados da API');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-slate-600">Carregando dados...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <p className="text-center text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
         <p className="text-center text-slate-500">Configure os dados do gráfico</p>
@@ -135,58 +473,96 @@ function ChartComponent({ content, type }: any) {
       )}
       <ResponsiveContainer width="100%" height={content.height || 300}>
         {type === "barChart" && (
-          <BarChart data={content.data}>
+          <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={content.xKey || "name"} />
+            <XAxis dataKey={apiConfig?.xKey || content.xKey || "name"} />
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey={content.yKey || "value"} fill={content.color || "#3b82f6"} />
+            {dataSeries && dataSeries.length > 0 ? (
+              dataSeries.map((series: DataSeries) => (
+                <Bar 
+                  key={series.id}
+                  dataKey={series.yKey} 
+                  fill={series.color} 
+                  name={series.name}
+                />
+              ))
+            ) : (
+              <Bar dataKey={apiConfig?.yKey || content.yKey || "value"} fill={content.color || "#3b82f6"} />
+            )}
           </BarChart>
         )}
         {type === "lineChart" && (
-          <LineChart data={content.data}>
+          <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={content.xKey || "name"} />
+            <XAxis dataKey={apiConfig?.xKey || content.xKey || "name"} />
             <YAxis />
             <Tooltip />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey={content.yKey || "value"} 
-              stroke={content.color || "#3b82f6"}
-              strokeWidth={2}
-            />
+            {dataSeries && dataSeries.length > 0 ? (
+              dataSeries.map((series: DataSeries) => (
+                <Line 
+                  key={series.id}
+                  type="monotone" 
+                  dataKey={series.yKey} 
+                  stroke={series.color}
+                  strokeWidth={2}
+                  name={series.name}
+                />
+              ))
+            ) : (
+              <Line 
+                type="monotone" 
+                dataKey={apiConfig?.yKey || content.yKey || "value"} 
+                stroke={content.color || "#3b82f6"}
+                strokeWidth={2}
+              />
+            )}
           </LineChart>
         )}
         {type === "areaChart" && (
-          <AreaChart data={content.data}>
+          <AreaChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={content.xKey || "name"} />
+            <XAxis dataKey={apiConfig?.xKey || content.xKey || "name"} />
             <YAxis />
             <Tooltip />
             <Legend />
-            <Area 
-              type="monotone" 
-              dataKey={content.yKey || "value"} 
-              stroke={content.color || "#3b82f6"}
-              fill={content.color || "#3b82f6"}
-              fillOpacity={0.6}
-            />
+            {dataSeries && dataSeries.length > 0 ? (
+              dataSeries.map((series: DataSeries) => (
+                <Area 
+                  key={series.id}
+                  type="monotone" 
+                  dataKey={series.yKey} 
+                  stroke={series.color}
+                  fill={series.color}
+                  fillOpacity={0.6}
+                  name={series.name}
+                />
+              ))
+            ) : (
+              <Area 
+                type="monotone" 
+                dataKey={apiConfig?.yKey || content.yKey || "value"} 
+                stroke={content.color || "#3b82f6"}
+                fill={content.color || "#3b82f6"}
+                fillOpacity={0.6}
+              />
+            )}
           </AreaChart>
         )}
         {type === "pieChart" && (
           <PieChart>
             <Pie
-              data={content.data}
+              data={data}
               cx="50%"
               cy="50%"
               outerRadius={100}
-              dataKey={content.yKey || "value"}
-              nameKey={content.xKey || "name"}
+              dataKey={apiConfig?.yKey || content.yKey || "value"}
+              nameKey={apiConfig?.xKey || content.xKey || "name"}
               label
             >
-              {content.data.map((_: any, index: number) => (
+              {data.map((_: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -199,8 +575,8 @@ function ChartComponent({ content, type }: any) {
   );
 }
 
-function renderComponent(component: SlideComponent) {
-  const { type, content, styles } = component;
+function renderComponent(component: SlideComponent, refreshTrigger?: number) {
+  const { type, content, styles, dataSource, apiConfig, dataSeries } = component;
 
   switch (type) {
     case "title":
@@ -212,14 +588,14 @@ function renderComponent(component: SlideComponent) {
     case "image":
       return <ImageComponent content={content} />;
     case "metric":
-      return <MetricComponent content={content} />;
+      return <MetricComponent content={content} dataSource={dataSource} apiConfig={apiConfig} refreshTrigger={refreshTrigger} />;
     case "twoColumns":
       return <TwoColumnsComponent content={content} components={component} />;
     case "barChart":
     case "lineChart":
     case "areaChart":
     case "pieChart":
-      return <ChartComponent content={content} type={type} />;
+      return <ChartComponent content={content} type={type} dataSource={dataSource} apiConfig={apiConfig} dataSeries={dataSeries} refreshTrigger={refreshTrigger} />;
     default:
       return null;
   }
@@ -238,6 +614,7 @@ export default function PresentationPage() {
   const [presentationMode, setPresentationMode] = useState(false);
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [showComponentPicker, setShowComponentPicker] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const currentSlide = slides[currentSlideIndex];
 
@@ -395,7 +772,7 @@ export default function PresentationPage() {
           <div className="w-full max-w-6xl space-y-8">
             {currentSlide.components.map((component) => (
               <div key={component.id}>
-                {renderComponent(component)}
+                {renderComponent(component, refreshTrigger)}
               </div>
             ))}
           </div>
@@ -721,15 +1098,170 @@ export default function PresentationPage() {
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+
+                      {/* Fonte de Dados */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Valor</label>
-                        <input
-                          type="text"
-                          value={component.content.value}
-                          onChange={(e) => updateComponent(component.id, { value: e.target.value })}
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Fonte de Dados</label>
+                        <select
+                          value={component.dataSource || "static"}
+                          onChange={(e) => {
+                            const updatedSlides = [...slides];
+                            const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                            if (comp) {
+                              comp.dataSource = e.target.value as DataSource;
+                              if (e.target.value === "api") {
+                                comp.apiConfig = { endpoint: "", params: {} };
+                              }
+                              setSlides(updatedSlides);
+                            }
+                          }}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        >
+                          <option value="static">Valor Fixo</option>
+                          <option value="api">API do Sistema</option>
+                        </select>
                       </div>
+
+                      {component.dataSource === "api" ? (
+                        <>
+                          {/* Preset de métricas */}
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Métrica Pré-configurada
+                            </label>
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  const updatedSlides = [...slides];
+                                  const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                  if (comp) {
+                                    const configs: Record<string, any> = {
+                                      totalSales: {
+                                        endpoint: "/api/sales/summary",
+                                        dataPath: "data",
+                                        valueKey: "totalSales",
+                                        format: "number",
+                                        label: "Total de Vendas",
+                                      },
+                                      totalRevenue: {
+                                        endpoint: "/api/sales/summary",
+                                        dataPath: "data",
+                                        valueKey: "totalRevenue",
+                                        format: "currency",
+                                        label: "Faturamento Total",
+                                      },
+                                      averageTicket: {
+                                        endpoint: "/api/sales/summary",
+                                        dataPath: "data",
+                                        valueKey: "averageTicket",
+                                        format: "currency",
+                                        label: "Ticket Médio",
+                                      },
+                                      completedSales: {
+                                        endpoint: "/api/sales/summary",
+                                        dataPath: "data",
+                                        valueKey: "completedSales",
+                                        format: "number",
+                                        label: "Vendas Completas",
+                                      },
+                                    };
+                                    
+                                    const config = configs[e.target.value];
+                                    comp.apiConfig = config;
+                                    comp.content = {
+                                      ...comp.content,
+                                      label: config.label,
+                                    };
+                                    setSlides(updatedSlides);
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+                            >
+                              <option value="">Selecione uma métrica...</option>
+                              <option value="totalSales">📊 Total de Vendas</option>
+                              <option value="totalRevenue">💰 Faturamento Total</option>
+                              <option value="averageTicket">🎯 Ticket Médio</option>
+                              <option value="completedSales">✅ Vendas Completas</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Endpoint da API
+                            </label>
+                            <input
+                              type="text"
+                              value={component.apiConfig?.endpoint || ""}
+                              onChange={(e) => {
+                                const updatedSlides = [...slides];
+                                const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                if (comp && comp.apiConfig) {
+                                  comp.apiConfig.endpoint = e.target.value;
+                                  setSlides(updatedSlides);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Chave do Valor
+                            </label>
+                            <input
+                              type="text"
+                              value={component.apiConfig?.valueKey || ""}
+                              onChange={(e) => {
+                                const updatedSlides = [...slides];
+                                const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                if (comp && comp.apiConfig) {
+                                  comp.apiConfig.valueKey = e.target.value;
+                                  setSlides(updatedSlides);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="totalSales"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Formato
+                            </label>
+                            <select
+                              value={component.apiConfig?.format || ""}
+                              onChange={(e) => {
+                                const updatedSlides = [...slides];
+                                const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                if (comp && comp.apiConfig) {
+                                  comp.apiConfig.format = e.target.value;
+                                  setSlides(updatedSlides);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Texto</option>
+                              <option value="number">Número (1.234)</option>
+                              <option value="currency">Moeda (R$ 1.234,56)</option>
+                            </select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Valor</label>
+                            <input
+                              type="text"
+                              value={component.content.value}
+                              onChange={(e) => updateComponent(component.id, { value: e.target.value })}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </>
+                      )}
+
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Subtítulo</label>
                         <input
@@ -753,25 +1285,248 @@ export default function PresentationPage() {
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+
+                      {/* Fonte de Dados */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Dados (JSON)</label>
-                        <textarea
-                          value={JSON.stringify(component.content.data, null, 2)}
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Fonte de Dados</label>
+                        <select
+                          value={component.dataSource || "static"}
                           onChange={(e) => {
-                            try {
-                              const data = JSON.parse(e.target.value);
-                              updateComponent(component.id, { data });
-                            } catch (err) {
-                              // Invalid JSON, ignore
+                            const updatedSlides = [...slides];
+                            const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                            if (comp) {
+                              comp.dataSource = e.target.value as DataSource;
+                              if (e.target.value === "api") {
+                                comp.apiConfig = { endpoint: "", params: {} };
+                              }
+                              setSlides(updatedSlides);
                             }
                           }}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
-                          rows={8}
-                        />
-                        <p className="text-xs text-slate-500 mt-1">
-                          Formato: [{"{ name: 'Item', value: 100 }"}]
-                        </p>
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="static">Dados Estáticos (JSON)</option>
+                          <option value="api">API do Sistema</option>
+                        </select>
                       </div>
+
+                      {component.dataSource === "api" ? (
+                        <>
+                          {/* Preset de API */}
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              API Pré-configurada
+                            </label>
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  const preset = API_PRESETS[e.target.value as keyof typeof API_PRESETS];
+                                  const updatedSlides = [...slides];
+                                  const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                  if (comp) {
+                                    comp.apiConfig = {
+                                      endpoint: preset.endpoint,
+                                      params: preset.params,
+                                      dataPath: preset.dataPath,
+                                      transform: preset.transform,
+                                      xKey: preset.xKey,
+                                      yKey: preset.yKey,
+                                    };
+                                    comp.content = {
+                                      ...comp.content,
+                                      title: comp.content.title || preset.name,
+                                    };
+                                    setSlides(updatedSlides);
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+                            >
+                              <option value="">Selecione uma API...</option>
+                              <option value="salesByDay">📊 Vendas por Dia (30 dias)</option>
+                              <option value="topProducts">🍔 Top 10 Produtos</option>
+                              <option value="storesComparison">🏪 Comparação de Lojas</option>
+                              <option value="statusDistribution">📈 Distribuição por Status</option>
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Selecione para usar dados reais do sistema
+                            </p>
+                          </div>
+
+                          {/* Endpoint customizado */}
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Endpoint da API
+                            </label>
+                            <input
+                              type="text"
+                              value={component.apiConfig?.endpoint || ""}
+                              onChange={(e) => {
+                                const updatedSlides = [...slides];
+                                const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                if (comp && comp.apiConfig) {
+                                  comp.apiConfig.endpoint = e.target.value;
+                                  setSlides(updatedSlides);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                              placeholder="/api/sales/summary"
+                            />
+                          </div>
+
+                          {/* Parâmetros */}
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Parâmetros (JSON)
+                            </label>
+                            <textarea
+                              value={JSON.stringify(component.apiConfig?.params || {}, null, 2)}
+                              onChange={(e) => {
+                                try {
+                                  const params = JSON.parse(e.target.value);
+                                  const updatedSlides = [...slides];
+                                  const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                  if (comp && comp.apiConfig) {
+                                    comp.apiConfig.params = params;
+                                    setSlides(updatedSlides);
+                                  }
+                                } catch (err) {
+                                  // Invalid JSON
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                              rows={3}
+                              placeholder='{"days": "30"}'
+                            />
+                          </div>
+
+                          {/* Filtros Adicionais */}
+                          <div className="border-t pt-3 space-y-3">
+                            <label className="block text-sm font-semibold text-slate-900">Filtros</label>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-slate-600">Data Início</label>
+                                <input
+                                  type="date"
+                                  value={component.apiConfig?.filters?.startDate || ""}
+                                  onChange={(e) => {
+                                    const updatedSlides = [...slides];
+                                    const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                    if (comp && comp.apiConfig) {
+                                      if (!comp.apiConfig.filters) comp.apiConfig.filters = {};
+                                      comp.apiConfig.filters.startDate = e.target.value;
+                                      setSlides(updatedSlides);
+                                    }
+                                  }}
+                                  className="w-full text-xs px-2 py-1 border border-slate-300 rounded mt-1"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-600">Data Fim</label>
+                                <input
+                                  type="date"
+                                  value={component.apiConfig?.filters?.endDate || ""}
+                                  onChange={(e) => {
+                                    const updatedSlides = [...slides];
+                                    const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                    if (comp && comp.apiConfig) {
+                                      if (!comp.apiConfig.filters) comp.apiConfig.filters = {};
+                                      comp.apiConfig.filters.endDate = e.target.value;
+                                      setSlides(updatedSlides);
+                                    }
+                                  }}
+                                  className="w-full text-xs px-2 py-1 border border-slate-300 rounded mt-1"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-xs text-slate-600 block mb-1">Dias da Semana</label>
+                              <div className="flex flex-wrap gap-1">
+                                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => {
+                                      const updatedSlides = [...slides];
+                                      const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                      if (comp && comp.apiConfig) {
+                                        if (!comp.apiConfig.filters) comp.apiConfig.filters = {};
+                                        const current = comp.apiConfig.filters.daysOfWeek || [];
+                                        if (current.includes(idx)) {
+                                          comp.apiConfig.filters.daysOfWeek = current.filter(d => d !== idx);
+                                        } else {
+                                          comp.apiConfig.filters.daysOfWeek = [...current, idx];
+                                        }
+                                        setSlides(updatedSlides);
+                                      }
+                                    }}
+                                    className={`text-xs px-2 py-1 rounded ${
+                                      component.apiConfig?.filters?.daysOfWeek?.includes(idx)
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-200 text-slate-600'
+                                    }`}
+                                  >
+                                    {day}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Transformação */}
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                              Transformação dos Dados
+                            </label>
+                            <select
+                              value={component.apiConfig?.transform || ""}
+                              onChange={(e) => {
+                                const updatedSlides = [...slides];
+                                const comp = updatedSlides[currentSlideIndex].components.find(c => c.id === component.id);
+                                if (comp && comp.apiConfig) {
+                                  comp.apiConfig.transform = e.target.value;
+                                  setSlides(updatedSlides);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Nenhuma (usar dados brutos)</option>
+                              <option value="salesByDay">📅 Vendas por Dia (formata datas)</option>
+                              <option value="topProducts">🍔 Top Produtos (extrai nome/quantidade)</option>
+                              <option value="storesComparison">🏪 Comparação de Lojas (agrupa por loja)</option>
+                              <option value="statusDistribution">📊 Distribuição por Status (separa completas/canceladas)</option>
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Converte os dados da API para o formato do gráfico (name/value)
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Dados estáticos */}
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Dados (JSON)</label>
+                            <textarea
+                              value={JSON.stringify(component.content.data, null, 2)}
+                              onChange={(e) => {
+                                try {
+                                  const data = JSON.parse(e.target.value);
+                                  updateComponent(component.id, { data });
+                                } catch (err) {
+                                  // Invalid JSON, ignore
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                              rows={8}
+                            />
+                            <p className="text-xs text-slate-500 mt-1">
+                              Formato: [{"{ name: 'Item', value: 100 }"}]
+                            </p>
+                          </div>
+                        </>
+                      )}
+                      
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Cor</label>
                         <input
