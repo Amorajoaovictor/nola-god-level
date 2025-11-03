@@ -96,11 +96,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </a>
               
               <a
-                href="/docs"
+                href="/api-docs"
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <span>📚</span>
-                <span className="font-medium">Documentação</span>
+                <span className="font-medium">API Docs</span>
               </a>
 
               <button
