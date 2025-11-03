@@ -56,6 +56,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             <div className="pt-4 mt-4 border-t border-slate-200">
               <a
+                href="/dashboard/presentation"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              >
+                <span>🎬</span>
+                <span className="font-medium">Apresentações</span>
+              </a>
+              
+              <a
                 href="/docs"
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
               >
