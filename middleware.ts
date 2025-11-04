@@ -33,8 +33,12 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute) {
     const token = request.cookies.get("auth-token")?.value;
 
+    console.log('[Middleware] Protected route:', pathname);
+    console.log('[Middleware] Token exists:', !!token);
+
     // Se não tem token, redirecionar para login
     if (!token) {
+      console.log('[Middleware] No token, redirecting to login');
       const url = new URL("/login", request.url);
       url.searchParams.set("redirect", pathname);
       return NextResponse.redirect(url);
@@ -43,9 +47,10 @@ export async function middleware(request: NextRequest) {
     try {
       // Verificar se o token é válido
       await jwtVerify(token, SECRET);
+      console.log('[Middleware] Token valid, allowing access');
       return NextResponse.next();
     } catch (error) {
-      console.error("Token verification failed:", error);
+      console.error("[Middleware] Token verification failed:", error);
       // Token inválido, redirecionar para login
       const url = new URL("/login", request.url);
       url.searchParams.set("redirect", pathname);

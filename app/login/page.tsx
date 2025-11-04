@@ -21,12 +21,15 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Importante para cookies
         body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        // Pequeno delay para garantir que o cookie seja setado
+        await new Promise(resolve => setTimeout(resolve, 100));
         router.push('/dashboard');
         router.refresh();
       } else {
