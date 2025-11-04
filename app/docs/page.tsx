@@ -1,21 +1,39 @@
-import { redirect } from 'next/navigation';export default function Docs() {
+'use client';import { redirect } from 'next/navigation';export default function Docs() {
 
-  return (
+
+
+import { useEffect } from 'react';  return (
+
+import { useRouter } from 'next/navigation';
 
 export default function DocsPage() {    <main className="flex min-h-screen flex-col items-center justify-center p-24">
 
-  redirect('/api-docs');      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm">
+export default function DocsPage() {
 
-}        <h1 className="text-4xl font-bold mb-8 text-center">
+  const router = useRouter();  redirect('/api-docs');      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm">
 
-          Nola God Level - Restaurant Analytics API
-        </h1>
-        
-        <div className="mb-8 text-center">
-          <p className="text-lg mb-4">
-            Backend API com arquitetura em camadas usando Next.js e Prisma
-          </p>
-        </div>
+  
+
+  useEffect(() => {}        <h1 className="text-4xl font-bold mb-8 text-center">
+
+    router.replace('/api-docs');
+
+  }, [router]);          Nola God Level - Restaurant Analytics API
+
+          </h1>
+
+  return (        
+
+    <div className="flex min-h-screen items-center justify-center">        <div className="mb-8 text-center">
+
+      <p>Redirecionando...</p>          <p className="text-lg mb-4">
+
+    </div>            Backend API com arquitetura em camadas usando Next.js e Prisma
+
+  );          </p>
+
+}        </div>
+
 
         <div className="grid gap-6 mb-8">
           <div className="p-6 border rounded-lg">
