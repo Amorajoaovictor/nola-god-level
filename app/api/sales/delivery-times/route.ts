@@ -9,38 +9,64 @@ import prisma from "@/lib/prisma/client";
 export const GET = asyncHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   
-  const storeIds = searchParams.getAll("storeId").map(Number);
-  const startDate = searchParams.get("startDate");
-  const endDate = searchParams.get("endDate");
-  const daysOfWeek = searchParams.getAll("daysOfWeek").map(Number);
+  const storeIds = searchParams.getAll("storeId").map(Number).filter(id => !isNaN(id));
+  const startDateStr = searchParams.get("startDate");
+  const endDateStr = searchParams.get("endDate");
+  const daysOfWeek = searchParams.getAll("daysOfWeek").map(Number).filter(d => !isNaN(d));
 
-  // Construir filtros para SQL
-  let dateFilter = "";
-  let storeFilter = "";
+  console.log('[delivery-times] Filters:', { storeIds, startDateStr, endDateStr, daysOfWeek });
+
+  // Determinar datas
+  let startDate: Date;
+  let endDate: Date;
   
-  if (startDate || endDate) {
-    if (startDate && endDate) {
-      dateFilter = `AND s.created_at >= '${startDate}' AND s.created_at <= '${endDate}'`;
-    } else if (startDate) {
-      dateFilter = `AND s.created_at >= '${startDate}'`;
-    } else if (endDate) {
-      dateFilter = `AND s.created_at <= '${endDate}'`;
-    }
+  if (startDateStr && endDateStr) {
+    startDate = new Date(startDateStr);
+    endDate = new Date(endDateStr);
+  } else if (startDateStr) {
+    startDate = new Date(startDateStr);
+    endDate = new Date(); // até agora
+  } else if (endDateStr) {
+    // Últimos 30 dias até endDate
+    endDate = new Date(endDateStr);
+    startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 30);
   } else {
     // Últimos 30 dias
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    dateFilter = `AND s.created_at >= '${thirtyDaysAgo.toISOString()}'`;
+    endDate = new Date();
+    startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
   }
 
+  // Construir WHERE clause com prepared statements
+  const conditions: string[] = ["s.delivery_seconds IS NOT NULL"];
+  const params: any[] = [];
+  let paramIndex = 1;
+
+  // Filtro de data
+  conditions.push(`s.created_at >= $${paramIndex++}`);
+  params.push(startDate);
+  conditions.push(`s.created_at <= $${paramIndex++}`);
+  params.push(endDate);
+
+  // Filtro de loja
   if (storeIds.length > 0) {
-    storeFilter = `AND s.store_id IN (${storeIds.join(',')})`;
+    conditions.push(`s.store_id IN (${storeIds.map((_, i) => `$${paramIndex + i}`).join(',')})`);
+    params.push(...storeIds);
+    paramIndex += storeIds.length;
   }
 
-  let dayOfWeekFilter = "";
+  // Filtro de dia da semana
   if (daysOfWeek.length > 0) {
-    dayOfWeekFilter = `AND EXTRACT(DOW FROM s.created_at)::int IN (${daysOfWeek.join(',')})`;
+    conditions.push(`EXTRACT(DOW FROM s.created_at)::int IN (${daysOfWeek.map((_, i) => `$${paramIndex + i}`).join(',')})`);
+    params.push(...daysOfWeek);
+    paramIndex += daysOfWeek.length;
   }
+
+  const whereClause = conditions.join(' AND ');
+
+  console.log('[delivery-times] WHERE clause:', whereClause);
+  console.log('[delivery-times] Params:', params);
 
   // Query SQL otimizada para estatísticas gerais
   const statsQuery = `
@@ -51,10 +77,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
       ROUND(MAX(s.delivery_seconds / 60.0))::int as max_delivery_minutes,
       COUNT(*)::int as total_orders
     FROM sales s
-    WHERE s.delivery_seconds IS NOT NULL
-      ${dateFilter}
-      ${storeFilter}
-      ${dayOfWeekFilter}
+    WHERE ${whereClause}
     LIMIT 1
   `;
 
@@ -67,19 +90,18 @@ export const GET = asyncHandler(async (req: NextRequest) => {
       ROUND(AVG(s.production_seconds / 60.0))::int as avg_preparation_minutes
     FROM sales s
     JOIN stores st ON s.store_id = st.id
-    WHERE s.delivery_seconds IS NOT NULL
-      ${dateFilter}
-      ${storeFilter}
-      ${dayOfWeekFilter}
+    WHERE ${whereClause}
     GROUP BY st.id, st.name
     ORDER BY count DESC
     LIMIT 20
   `;
 
   const [statsResults, storeStatsResults]: any[] = await Promise.all([
-    prisma.$queryRawUnsafe(statsQuery),
-    prisma.$queryRawUnsafe(storeStatsQuery),
+    prisma.$queryRawUnsafe(statsQuery, ...params),
+    prisma.$queryRawUnsafe(storeStatsQuery, ...params),
   ]);
+
+  console.log('[delivery-times] Query results:', { statsResults, storeStatsResults });
 
   const stats = statsResults[0] || {
     avg_delivery_minutes: 0,
