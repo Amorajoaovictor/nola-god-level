@@ -16,31 +16,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Importante para cookies
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      console.log('[Login Frontend] Response status:', response.status);
-      console.log('[Login Frontend] Response data:', data);
-      console.log('[Login Frontend] Response headers:', Object.fromEntries(response.headers));
-
-      if (data.success) {
-        console.log('[Login Frontend] Login successful, waiting 100ms before redirect');
-        // Pequeno delay para garantir que o cookie seja setado
-        await new Promise(resolve => setTimeout(resolve, 100));
-        console.log('[Login Frontend] Redirecting to dashboard');
-        router.push('/dashboard');
-        router.refresh();
-      } else {
-        setError(data.message || 'Credenciais inválidas');
-      }
+      // Apenas redireciona direto pro dashboard sem validação
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simula loading
+      router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError('Erro ao fazer login. Tente novamente.');
