@@ -35,9 +35,15 @@ export async function POST(request: NextRequest) {
       // Definir cookie com token diretamente na resposta
       response.cookies.set("auth-token", token, {
         httpOnly: true,
-        secure: true, // Sempre true para funcionar em produção
-        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax", // lax funciona melhor em produção
         maxAge: 60 * 60 * 24, // 24 horas
+        path: "/",
+      });
+
+      console.log("[Login] Cookie set with config:", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         path: "/",
       });
 

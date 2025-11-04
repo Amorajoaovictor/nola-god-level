@@ -32,8 +32,10 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedRoute) {
     const token = request.cookies.get("auth-token")?.value;
+    const allCookies = request.cookies.getAll();
 
     console.log('[Middleware] Protected route:', pathname);
+    console.log('[Middleware] All cookies:', allCookies.map(c => c.name).join(', '));
     console.log('[Middleware] Token exists:', !!token);
 
     // Se não tem token, redirecionar para login

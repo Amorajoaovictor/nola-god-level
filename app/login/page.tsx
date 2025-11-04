@@ -27,9 +27,15 @@ export default function LoginPage() {
 
       const data = await response.json();
 
+      console.log('[Login Frontend] Response status:', response.status);
+      console.log('[Login Frontend] Response data:', data);
+      console.log('[Login Frontend] Response headers:', Object.fromEntries(response.headers));
+
       if (data.success) {
+        console.log('[Login Frontend] Login successful, waiting 100ms before redirect');
         // Pequeno delay para garantir que o cookie seja setado
         await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('[Login Frontend] Redirecting to dashboard');
         router.push('/dashboard');
         router.refresh();
       } else {
