@@ -76,23 +76,23 @@ export default function CustomersPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">Clientes</h1>
               <p className="text-sm text-slate-600">
                 Base de clientes e análise de comportamento
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
               <input
                 type="text"
                 placeholder="Buscar cliente..."
-                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="w-full sm:w-64 px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button 
                 onClick={exportCustomersToCSV}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -105,17 +105,17 @@ export default function CustomersPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Clientes</p>
             <p className="text-2xl font-bold text-slate-900">
               {(stats.total || 0).toLocaleString("pt-BR")}
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Com E-mail</p>
             <p className="text-2xl font-bold text-green-600">
               {(stats.withEmail || 0).toLocaleString("pt-BR")}
@@ -125,7 +125,7 @@ export default function CustomersPage() {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Com Telefone</p>
             <p className="text-2xl font-bold text-blue-600">
               {(stats.withPhone || 0).toLocaleString("pt-BR")}
@@ -135,7 +135,7 @@ export default function CustomersPage() {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Aceita Promoções</p>
             <p className="text-2xl font-bold text-purple-600">
               {(stats.promotionsEmail || 0).toLocaleString("pt-BR")}

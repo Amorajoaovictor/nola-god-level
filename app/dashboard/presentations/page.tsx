@@ -87,14 +87,14 @@ function ChartComponentEditor({ content, type }: any) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
         <p className="text-center text-slate-500">Sem dados para exibir</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
       {content.title && (
         <h3 className="text-xl font-semibold text-slate-900 mb-4">{content.title}</h3>
       )}
@@ -396,7 +396,7 @@ export default function PresentationsPage() {
             style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
           >
             {slide.data.map((metric: any, idx: number) => (
-              <div key={idx} className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              <div key={idx} className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-slate-200">
                 {showIcons && metric.icon && (
                   <span className="text-2xl mb-2 block">{metric.icon}</span>
                 )}
@@ -431,7 +431,7 @@ export default function PresentationsPage() {
         
         if (chartType === 'barChart') {
           return (
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={slide.data}>
                   {showGrid && <CartesianGrid strokeDasharray="3 3" />}
@@ -455,7 +455,7 @@ export default function PresentationsPage() {
           );
         } else if (chartType === 'lineChart') {
           return (
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={slide.data}>
                   {showGrid && <CartesianGrid strokeDasharray="3 3" />}
@@ -481,7 +481,7 @@ export default function PresentationsPage() {
           );
         } else if (chartType === 'areaChart') {
           return (
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <ResponsiveContainer width="100%" height={400}>
                 <AreaChart data={slide.data}>
                   {showGrid && <CartesianGrid strokeDasharray="3 3" />}
@@ -509,7 +509,7 @@ export default function PresentationsPage() {
         } else if (chartType === 'pieChart') {
           const pieColors = config.colors || COLORS;
           return (
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
                   <Pie
@@ -541,7 +541,7 @@ export default function PresentationsPage() {
         const fontSize = config.fontSize || 'medium';
         
         return (
-          <div className="bg-white p-6 rounded-lg shadow-sm overflow-x-auto">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm overflow-x-auto">
             <table className={`w-full ${
               fontSize === 'small' ? 'text-sm' : 
               fontSize === 'large' ? 'text-lg' : 
@@ -622,14 +622,14 @@ export default function PresentationsPage() {
           );
         }
         return (
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-center text-slate-500">Slide customizado sem componentes</p>
           </div>
         );
 
       default:
         return (
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <pre className="text-sm text-slate-600 overflow-auto">
               {JSON.stringify(slide.data, null, 2)}
             </pre>
@@ -661,9 +661,9 @@ export default function PresentationsPage() {
       <div className="min-h-screen bg-slate-900 text-white p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header do modo apresentação */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-6 md:mb-8">
             <div>
-              <h1 className="text-2xl font-bold">{presentation.name}</h1>
+              <h1 className="text-xl md:text-2xl font-bold">{presentation.name}</h1>
               <p className="text-slate-400">
                 Slide {currentSlideIndex + 1} de {presentation.slides.length}
               </p>
@@ -678,9 +678,9 @@ export default function PresentationsPage() {
 
           {/* Conteúdo do slide */}
           {currentSlide ? (
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <h2 className="text-3xl font-bold mb-6">{currentSlide.title}</h2>
-              <div className="bg-slate-800 p-6 rounded-lg">
+              <div className="bg-slate-800 p-4 md:p-6 rounded-lg">
                 {renderSlideContent(currentSlide)}
               </div>
             </div>
@@ -727,7 +727,7 @@ export default function PresentationsPage() {
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-6 md:mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">📊 Apresentações</h1>
             <p className="text-slate-600">Gerencie seus slides e apresentações</p>
@@ -816,7 +816,7 @@ export default function PresentationsPage() {
         ) : (
           <div className="space-y-6">
             {presentation.slides.map((slide, index) => (
-              <div key={slide.id} className="bg-white rounded-lg shadow-sm p-6">
+              <div key={slide.id} className="bg-white rounded-lg shadow-sm p-4 md:p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <span className="text-sm font-bold text-blue-600 mb-1">

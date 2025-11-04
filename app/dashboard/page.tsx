@@ -266,11 +266,11 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-              <div className="flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">Dashboard</h1>
+              <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                 <p className="text-sm text-slate-600">Overview das métricas principais</p>
                 {lastUpdate && (
                   <span className="text-xs text-slate-400">
@@ -279,12 +279,12 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
               {/* Filtro de Loja */}
               <select
                 value={storeId}
                 onChange={(e) => setStoreId(e.target.value)}
-                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
               >
                 <option value="">Todas as lojas</option>
                 {stores.map((store) => (
@@ -298,7 +298,7 @@ export default function DashboardPage() {
               <select
                 value={selectedMonthYear}
                 onChange={(e) => setSelectedMonthYear(e.target.value)}
-                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto sm:min-w-[160px]"
               >
                 <option value="">Todos os períodos</option>
                 {monthYearOptions.map((option) => (
@@ -311,7 +311,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <svg
                   className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
@@ -330,7 +330,7 @@ export default function DashboardPage() {
               </button>
               <button 
                 onClick={exportToCSV}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -345,27 +345,29 @@ export default function DashboardPage() {
       {/* Filtros Ativos */}
       {(storeId || selectedMonthYear) && (
         <div className="bg-blue-50 border-b border-blue-100">
-          <div className="container mx-auto px-6 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="container mx-auto px-4 md:px-6 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <span className="text-sm font-medium text-blue-900">Filtros ativos:</span>
-                {storeId && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    Loja: {stores.find(s => s.id.toString() === storeId)?.name}
-                  </span>
-                )}
-                {selectedMonthYear && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    Período: {monthYearOptions.find(opt => opt.value === selectedMonthYear)?.label}
-                  </span>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {storeId && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      Loja: {stores.find(s => s.id.toString() === storeId)?.name}
+                    </span>
+                  )}
+                  {selectedMonthYear && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      Período: {monthYearOptions.find(opt => opt.value === selectedMonthYear)?.label}
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => {
                   setStoreId("");
                   setSelectedMonthYear("");
                 }}
-                className="text-sm text-blue-700 hover:text-blue-900 font-medium"
+                className="text-sm text-blue-700 hover:text-blue-900 font-medium text-left sm:text-right"
               >
                 Limpar todos os filtros
               </button>
@@ -375,10 +377,10 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
 
         {/* KPI Cards */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Métricas Principais</h2>
           <AddToSlideButton
             title="Métricas Principais do Dashboard"
@@ -416,7 +418,7 @@ export default function DashboardPage() {
             variant="ghost"
           />
         </div>
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-slate-600">Faturamento Total</p>
@@ -499,10 +501,10 @@ export default function DashboardPage() {
         })()}
 
         {/* Charts Section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
           {/* Top Products Bar Chart */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
                 Top 5 Produtos - Quantidade Vendida
               </h3>
@@ -553,8 +555,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Revenue Pie Chart */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
                 Distribuição de Receita - Top 5
               </h3>
@@ -606,13 +608,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Products */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+        <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
               <h3 className="text-lg font-semibold text-slate-900">
                 Top 5 Produtos Mais Vendidos
               </h3>
-              <div className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+              <div className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full w-fit">
                 💡 Receita apenas dos produtos (sem taxas)
               </div>
             </div>
@@ -641,9 +643,9 @@ export default function DashboardPage() {
           {topProducts.length > 0 ? (
             <div className="space-y-4">
               {topProducts.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50 rounded-lg gap-3">
                   <div className="flex items-center gap-4">
-                    <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                    <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
                       {index + 1}
                     </div>
                     <div>
@@ -655,7 +657,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="font-semibold text-slate-900">
                       {item.totalQuantity?.toLocaleString("pt-BR") || 0} vendas
                     </p>
@@ -672,7 +674,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <a
             href="/dashboard/sales"
             className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"

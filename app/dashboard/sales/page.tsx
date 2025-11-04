@@ -347,20 +347,20 @@ export default function SalesPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Vendas</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">Vendas</h1>
               <p className="text-sm text-slate-600">
                 Análise detalhada de todas as vendas
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
               {/* Store Searchbox with Multiple Selection */}
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <button
                   onClick={() => setStoreSearchOpen(!storeSearchOpen)}
-                  className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-slate-50 flex items-center gap-2 min-w-[200px] justify-between"
+                  className="w-full px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-slate-50 flex items-center gap-2 sm:min-w-[200px] justify-between"
                 >
                   <span className="truncate">
                     {storeIds.length === 0 
@@ -460,7 +460,7 @@ export default function SalesPage() {
                   setChannelId(e.target.value);
                   setPage(1);
                 }}
-                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos os canais</option>
                 {channels.map((channel) => (
@@ -475,7 +475,7 @@ export default function SalesPage() {
                   setStatus(e.target.value);
                   setPage(1);
                 }}
-                className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos os status</option>
                 <option value="COMPLETED">Completa</option>
@@ -483,7 +483,7 @@ export default function SalesPage() {
               </select>
               <button 
                 onClick={exportSalesToCSV}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -494,8 +494,8 @@ export default function SalesPage() {
           </div>
           
           {/* Date Filters */}
-          <div className="mt-4 flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
               <label className="text-sm font-medium text-slate-600">Mês/Ano:</label>
               <select
                 value={selectedMonthYear}
@@ -503,7 +503,7 @@ export default function SalesPage() {
                   setSelectedMonthYear(e.target.value);
                   setPage(1);
                 }}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                className="w-full sm:w-auto px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 sm:min-w-[160px]"
               >
                 <option value="">Todos os períodos</option>
                 {monthYearOptions.map((option) => (
@@ -516,9 +516,9 @@ export default function SalesPage() {
           </div>
 
           {/* Day of Week Filter with Checkboxes */}
-          <div className="mt-4 flex items-start gap-4">
-            <label className="text-sm font-medium text-slate-600 pt-2">Dias da Semana:</label>
-            <div className="flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+            <label className="text-sm font-medium text-slate-600 sm:pt-2">Dias da Semana:</label>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {[
                 { value: 0, label: "Dom" },
                 { value: 1, label: "Seg" },
@@ -565,7 +565,7 @@ export default function SalesPage() {
                   setSelectedDays([]);
                   setPage(1);
                 }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg"
               >
                 Limpar filtros
               </button>
@@ -575,9 +575,9 @@ export default function SalesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Stats Cards */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Resumo de Vendas</h2>
           <AddToSlideButton
             title="Resumo de Vendas"
@@ -615,22 +615,22 @@ export default function SalesPage() {
             variant="ghost"
           />
         </div>
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Total de Vendas</p>
-            <p className="text-2xl font-bold text-slate-900">{(summary.totalSales || 0).toLocaleString("pt-BR")}</p>
+            <p className="text-xl md:text-2xl font-bold text-slate-900">{(summary.totalSales || 0).toLocaleString("pt-BR")}</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Faturamento</p>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(Number(summary.totalRevenue || 0))}</p>
+            <p className="text-xl md:text-2xl font-bold text-slate-900">{formatCurrency(Number(summary.totalRevenue || 0))}</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Vendas Completas</p>
             <p className="text-2xl font-bold text-green-600">
               {(summary.completedSales || 0).toLocaleString("pt-BR")}
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
             <p className="text-sm font-medium text-slate-600 mb-1">Vendas Canceladas</p>
             <p className="text-2xl font-bold text-red-600">
               {(summary.cancelledSales || 0).toLocaleString("pt-BR")}
@@ -640,7 +640,7 @@ export default function SalesPage() {
 
         {/* Month Comparison Chart */}
         {comparison && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6 md:mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
@@ -686,7 +686,7 @@ export default function SalesPage() {
               />
             </div>
             
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {/* Faturamento Comparison */}
               <div className="p-4 border border-slate-200 rounded-lg">
                 <p className="text-sm font-medium text-slate-600 mb-2">Faturamento</p>
@@ -772,10 +772,10 @@ export default function SalesPage() {
         )}
 
         {/* Charts Section */}
-        <div className="mb-8">
-          <div className="grid md:grid-cols-2 gap-6">
+        <div className="mb-6 md:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Sales Trend Line Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Evolução de Vendas {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
@@ -838,7 +838,7 @@ export default function SalesPage() {
           </div>
 
           {/* Revenue Area Chart */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
                 Faturamento Diário {startDate || endDate ? "- Período Filtrado" : "- Últimos 30 Dias"}
@@ -917,8 +917,8 @@ export default function SalesPage() {
         </div>
 
         {/* Heatmap - Sales by Day of Week and Hour */}
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="mb-6 md:mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
