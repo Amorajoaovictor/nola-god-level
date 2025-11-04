@@ -582,22 +582,32 @@ export default function StoresPage() {
                   </h2>
                   <div className="flex items-center gap-3">
                     <AddToSlideButton
-                      title={`Comparação de Lojas (${comparisonData.length} lojas)`}
-                      type="metrics"
+                      title={`Comparação de Lojas`}
+                      type="table"
                       data={comparisonData.map(({ store, performance }) => ({
                         loja: store.name,
                         cidade: `${store.city} - ${store.state}`,
-                        receita: performance.totalRevenue || 0,
-                        vendas: performance.totalSales || 0,
-                        ticketMedio: performance.averageTicket || 0,
+                        receita: `R$ ${(performance.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                        vendas: (performance.totalSales || 0).toLocaleString("pt-BR"),
+                        ticketMedio: `R$ ${(performance.averageTicket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                         taxaConclusao: performance.totalSales > 0
-                          ? ((performance.completedSales / performance.totalSales) * 100).toFixed(1)
-                          : 0,
-                        canceladas: performance.cancelledSales || 0
+                          ? `${((performance.completedSales / performance.totalSales) * 100).toFixed(1)}%`
+                          : '0%',
+                        canceladas: (performance.cancelledSales || 0).toLocaleString("pt-BR")
                       }))}
                       config={{
-                        type: 'comparison',
-                        stores: comparisonData.map(({ store }) => store.name)
+                        columns: [
+                          { key: 'loja', label: 'Loja' },
+                          { key: 'cidade', label: 'Localização' },
+                          { key: 'receita', label: 'Receita Total' },
+                          { key: 'vendas', label: 'Total Vendas' },
+                          { key: 'ticketMedio', label: 'Ticket Médio' },
+                          { key: 'taxaConclusao', label: 'Taxa Conclusão' },
+                          { key: 'canceladas', label: 'Canceladas' }
+                        ],
+                        showHeader: true,
+                        striped: true,
+                        fontSize: 'medium'
                       }}
                       variant="primary"
                     />

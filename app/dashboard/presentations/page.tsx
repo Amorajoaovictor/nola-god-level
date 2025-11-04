@@ -282,8 +282,106 @@ export default function PresentationsPage() {
     window.open('/dashboard/presentation', '_blank');
   };
 
+  const renderHeatmap = (data: any[], selectedDays?: number[], period?: string) => {
+    const allDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const daysToShow = selectedDays && selectedDays.length > 0 
+      ? selectedDays.sort((a, b) => a - b)
+      : [0, 1, 2, 3, 4, 5, 6];
+    
+    const days = daysToShow.map(idx => allDays[idx]);
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+
+    // Criar matriz de dados apenas para os dias filtrados
+    const matrix: number[][] = daysToShow.map(() => Array(24).fill(0));
+    
+    data.forEach((item) => {
+      const dayIndex = daysToShow.indexOf(item.dayOfWeek);
+      if (dayIndex !== -1) {
+        matrix[dayIndex][item.hour] = item.totalSales;
+      }
+    });
+
+    // Encontrar máximo para normalizar cores
+    const maxSales = Math.max(...data.map(d => d.totalSales), 1);
+
+    const getColor = (value: number) => {
+      if (value === 0) return "#f1f5f9";
+      const intensity = value / maxSales;
+      if (intensity < 0.2) return "#dbeafe";
+      if (intensity < 0.4) return "#93c5fd";
+      if (intensity < 0.6) return "#60a5fa";
+      if (intensity < 0.8) return "#3b82f6";
+      return "#1d4ed8";
+    };
+
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        {period && (
+          <p className="text-sm text-slate-600 mb-4 text-center">
+            Período: {period}
+          </p>
+        )}
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[800px]">
+            {/* Header com horas */}
+            <div className="flex mb-1">
+              <div className="w-16"></div>
+              {hours.map((hour) => (
+                <div key={hour} className="flex-1 text-center text-xs text-slate-600 font-medium">
+                  {hour}h
+                </div>
+              ))}
+            </div>
+
+            {/* Matriz do heatmap */}
+            {days.map((day, dayIndex) => (
+              <div key={day} className="flex mb-1">
+                <div className="w-16 flex items-center justify-end pr-2 text-xs font-medium text-slate-700">
+                  {day}
+                </div>
+                {hours.map((hour) => {
+                  const value = matrix[dayIndex][hour];
+                  return (
+                    <div
+                      key={`${dayIndex}-${hour}`}
+                      className="flex-1 aspect-square flex items-center justify-center text-xs font-medium rounded border border-white"
+                      style={{ backgroundColor: getColor(value) }}
+                      title={`${day} ${hour}h: ${value} vendas`}
+                    >
+                      {value > 0 ? value : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* Legenda */}
+            <div className="mt-4 flex items-center gap-2 justify-center">
+              <span className="text-xs text-slate-600">Menos vendas</span>
+              <div className="flex gap-1">
+                <div className="w-6 h-6 rounded" style={{ backgroundColor: "#f1f5f9" }}></div>
+                <div className="w-6 h-6 rounded" style={{ backgroundColor: "#dbeafe" }}></div>
+                <div className="w-6 h-6 rounded" style={{ backgroundColor: "#93c5fd" }}></div>
+                <div className="w-6 h-6 rounded" style={{ backgroundColor: "#60a5fa" }}></div>
+                <div className="w-6 h-6 rounded" style={{ backgroundColor: "#3b82f6" }}></div>
+                <div className="w-6 h-6 rounded" style={{ backgroundColor: "#1d4ed8" }}></div>
+              </div>
+              <span className="text-xs text-slate-600">Mais vendas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSlideContent = (slide: Slide) => {
     const config = slide.config || {};
+    
+    console.group(`🎨 Renderizando slide: ${slide.title}`);
+    console.log('Type:', slide.type);
+    console.log('Data:', slide.data);
+    console.log('Config:', config);
+    console.groupEnd();
     
     switch (slide.type) {
       case 'metrics':
@@ -485,12 +583,19 @@ export default function PresentationsPage() {
         );
 
       case 'custom':
-        // Slides criados no editor avançado
+        // Slides criados no editor avançado OU componentes customizados como heatmap
         console.group(`🎨 Renderizando slide custom: ${slide.id}`);
         console.log('Slide completo:', slide);
         console.log('Data type:', typeof slide.data);
         console.log('Is Array:', Array.isArray(slide.data));
         console.log('Data length:', Array.isArray(slide.data) ? slide.data.length : 0);
+        
+        // Verificar se é um heatmap
+        if (slide.data?.type === 'heatmap') {
+          console.log('🔥 Renderizando heatmap customizado');
+          console.groupEnd();
+          return renderHeatmap(slide.data.heatmapData, slide.data.selectedDays, slide.data.period);
+        }
         
         if (Array.isArray(slide.data)) {
           console.log('Componentes:');

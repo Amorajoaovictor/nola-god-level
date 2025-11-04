@@ -22,6 +22,13 @@ export default function AddToSlideButton({
 
   const handleAddToSlide = () => {
     try {
+      console.group('🎬 Adicionando slide');
+      console.log('Title:', title);
+      console.log('Type:', type);
+      console.log('Data:', data);
+      console.log('Config:', config);
+      console.groupEnd();
+      
       PresentationStore.addSlide({
         title,
         type,
